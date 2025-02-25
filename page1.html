@@ -125,115 +125,148 @@
                 </div>
               </div>
             </div>
-            <div class="p-4 @container">
-              <div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-[#3c3c53] bg-[#111118] p-5 @[480px]:flex-row @[480px]:items-center">
-                <div class="flex flex-col gap-1">
-                  <p class="text-white text-base font-bold leading-tight">Get a push notification when you're close to your destination</p>
-                  <p class="text-[#9d9db8] text-base font-normal leading-normal">
-                    We use your location to send you a notification when you're close to your destination. You can enable or disable this feature at any time in your settings.
-                  </p>
-                </div>
-                <label
-                  class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-[#292938] p-0.5 has-[:checked]:justify-end has-[:checked]:bg-[#1919e6]"
-                >
-                  <div class="h-full w-[27px] rounded-full bg-white" style="box-shadow: rgba(0, 0, 0, 0.15) 0px 3px 8px, rgba(0, 0, 0, 0.06) 0px 3px 1px;"></div>
-                  <input type="checkbox" class="invisible absolute" />
-                </label>
+
+
+          <div class="p-4 @container">
+  <div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-[#3c3c53] bg-[#111118] p-5 @[480px]:flex-row @[480px]:items-center">
+    <div class="flex flex-col gap-1">
+      <p class="text-white text-base font-bold leading-tight">
+        Get a push notification when you're close to your destination
+      </p>
+      <p class="text-[#9d9db8] text-base font-normal leading-normal">
+        We use your location to send you a notification when you're close to your destination. You can enable or disable this feature at any time in your settings.
+      </p>
+    </div>
+    <label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-[#292938] p-0.5 has-[:checked]:justify-end has-[:checked]:bg-[#1919e6]">
+      <div class="h-full w-[27px] rounded-full bg-white" style="box-shadow: rgba(0, 0, 0, 0.15) 0px 3px 8px, rgba(0, 0, 0, 0.06) 0px 3px 1px;"></div>
+      <input type="checkbox" class="invisible absolute" />
+    </label>
+  </div>
+</div>
+
+<div class="flex flex-col gap-10 px-4 py-10 @container text-center">
+  <h1 class="text-white text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] mx-auto">
+    LET'S DRIVE IN ...
+  </h1>
+  <div class="text-center text-white p-5 max-w-[700px] mx-auto">
+    <h2 class="text-[#00bfff] text-2xl mb-2">About Us</h2>
+    <p class="text-xl mb-4 font-serif">
+      Welcome to <strong>Smart Parking Management System</strong>, your ultimate solution for hassle-free parking. Our goal is to revolutionize urban mobility by providing real-time, efficient, and user-friendly parking solutions.
+    </p>
+    <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md">
+      <h3 class="text-[#00bfff] text-lg mb-3"><strong>What We Offer</strong></h3>
+      
+      <p class="text-lg mt-2"><strong>🚗 Turn-by-Turn Navigation:</strong></p>
+      <p class="text-[#9d9db8]">Get real-time directions to your assigned parking slot.</p>
+
+      <p class="text-lg mt-2"><strong>📊 Parking Status:</strong></p>
+      <p class="text-[#9d9db8]">Stay updated with live parking slot availability.</p>
+
+      <p class="text-lg mt-2"><strong>📍 Nearby Parking Spots:</strong></p>
+      <p class="text-[#9d9db8]">Find the closest available parking areas.</p>
+
+      <p class="text-lg mt-2"><strong>📜 Parking History:</strong></p>
+      <p class="text-[#9d9db8]">Track your past parking sessions and payments.</p>
+    </div>
+    <p class="text-sm mt-4">
+      Our system leverages advanced technology to create a <strong>smarter, more efficient parking ecosystem</strong>. Join us in shaping the future of urban mobility! 🚀
+    </p>
+  </div>
+</div>
+
+            
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 pb-3">
+              <!-- Additional Content Goes Here -->
+            </div>
+            
+                    
+                
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 pb-6">
+              <!-- First Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-map-marked-alt"></i> Turn-by-Turn Navigation</h3>
+                <p class="mt-2">Get real-time directions to your assigned parking slot.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">View Map</button>
+              </div>
+            
+              <!-- Second Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-car"></i> Parking Status</h3>
+                <p class="mt-2">Check the availability of parking slots in real-time.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">Check Status</button>
+              </div>
+            
+              <!-- Third Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-map"></i> Nearby Parking Spots</h3>
+                <p class="mt-2">Find the closest available parking spots near your location.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">Find Spots</button>
+              </div>
+            
+              <!-- Fourth Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-ticket-alt"></i> Parking History</h3>
+                <p class="mt-2">View your past parking sessions and payments.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">View History</button>
               </div>
             </div>
-            <div class="flex flex-col gap-10 px-4 py-10 @container">
-              <h1
-                class="text-white tracking-light text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] max-w-[720px]"
-              >
-              <div style="font-family: Arial, sans-serif; color: white; padding: 20px; max-width: 700px; margin: auto; line-height: 1.5; text-align: center;">
-                <h2 style="color: #00bfff; font-size: 24px; margin-bottom: 10px;">About Us</h2>
-                
-                <p style="font-size: 24px; margin-bottom: 15px; font-family: 'Times New Roman', Times, serif;">
-                    Welcome to <strong>Smart Parking Management System</strong>, your ultimate solution for hassle-free parking. 
-                    Our goal is to revolutionize urban mobility by providing real-time, efficient, and user-friendly parking solutions.
-                </p>
             
-                <div style="background: rgba(255, 255, 255, 0.1); padding: 15px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);">
-                    <h3 style="color: #00bfff; font-size: 18px; margin-bottom: 10px;">What We Offer</h3>
-            
-                    <p style="font-size: 20px; margin-top: 15px;"><strong style=" font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;">🚗 Turn-by-Turn Navigation:</strong> Get real-time directions to your assigned parking slot.</p>
-            
-                    <p style="font-size: 20px; margin-top: 15px;"><strong style=" font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;">📊 Parking Status:</strong> Stay updated with live parking slot availability.</p>
-            
-                    <p style="font-size: 20px; margin-top: 15px;"><strong style=" font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;">📍 Nearby Parking Spots:</strong> Find the closest available parking areas.</p>
-            
-                    <p style="font-size: 20px; margin-top: 15px;"><strong style=" font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;">📜 Parking History:</strong> Track your past parking sessions and payments.</p>
-                </div>
-            
-                <p style="font-size: 14px; margin-top: 15px;">
-                    Our system leverages advanced technology to create a <strong>smarter, more efficient parking ecosystem</strong>.  
-                    Join us in shaping the future of urban mobility! 🚀
-                </p>
-            </div>
-            
-            </div>
-            
-                LET'S DRIVE IN ...
-              </h1>
-              <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3">
-                
-                
-                <div class="flex flex-col gap-3 pb-3">
-                    
-                
-                    
-                
-                    
-                            <!-- First Column -->
-                            <div class="col-md-6">
-                                <div class="card p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-left bg-dark">
-                                    <center><h3><i class="fas fa-map-marked-alt"></i> Turn-by-Turn Navigation</h3></center>
-                                    <center><p>Get real-time directions to your assigned parking slot.</p></center>
-                                    <center><button class="btn w-[700px] bg-blue-500 text-white rounded-lg py-2">View Map</button></center>
-                                </div>
-                            </div>
-                    
-                            <!-- Second Column -->
-                            <div class="col-md-6">
-                                <div class="card p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-left bg-dark background-color:grey">
-                                    <center><h3><i class="fas fa-car"></i> Parking Status</h3></center>
-                                    <center><p>Check the availability of parking slots in real-time.</p></center>
-                                    <center><button class="btn w-[700px] bg-blue-500 text-white rounded-lg py-2">Check Status</button></center>
-                                </div>
-                            </div>
-
-
-                            
-                    
-                            <!-- Third Column -->
-                            <div class="col-md-6">
-                                <div class="card p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-left bg-dark">
-                                    <center><h3><i class="fas fa-map"></i> Nearby Parking Spots</h3></center>
-                                    <center><p>Find the closest available parking spots near your location.</p></center>
-                                    <center>
-                                        <button class="btn w-[700px] bg-blue-500 text-white rounded-lg py-2">
-                                          Find Spots
-                                        </button>
-                                      </center>
-                                      
-                                </div>
-                            </div>
-                    
-                            <!-- Fourth Column -->
-                            <div class="col-md-6">
-                                <div class="card p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-left bg-dark">
-                                    <center><h3><i class="fas fa-ticket-alt"></i> Parking History</h3></center>
-                                    <center><p>View your past parking sessions and payments.</p></center>
-                                    <center><button class="btn w-[700px] bg-blue-500 text-white rounded-lg py-2">View History</button></center>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
           </div>
         </div>
-      </div>
-    </div>
+    
+
     <script src="script.js"></script>
 
+
+    <footer class="bg-[#111118] text-white py-8">
+      <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        <!-- Company Info -->
+        <div class="text-center md:text-left">
+          <h3 class="text-xl font-bold text-[#00bfff]">Smart Parking</h3>
+          <p class="text-sm text-[#9d9db8] mt-2">
+            Revolutionizing urban mobility with real-time, efficient, and user-friendly parking solutions.
+          </p>
+        </div>
+    
+        <!-- Quick Links -->
+        <div class="text-center">
+          <h3 class="text-lg font-semibold text-[#00bfff]"></h3>
+          <ul class="mt-2 space-y-2 text-white">
+            <li><a href="#" class="text-[#00bfff] ">Home</a></li>
+            <li><a href="#" class="hover:text-[#00bfff] transition">About Us</a></li>
+            <li><a href="#" class="hover:text-[#00bfff] transition">Services</a></li>
+            <li><a href="#" class="hover:text-[#00bfff] transition">Contact</a></li>
+        </ul>
+        
+        </div>
+    
+        <!-- Contact & Social Media -->
+        <div class="text-center md:text-right">
+          <h3 class="text-lg font-semibold text-[#00bfff]">Contact Us</h3>
+          <p class="text-sm text-[#9d9db8] mt-2">Email: support@smartparking.com</p>
+          <p class="text-sm text-[#9d9db8]">Phone: +123 456 7890</p>
+          
+          <!-- Social Media Icons -->
+          <div class="flex justify-center md:justify-end space-x-4 mt-4">
+            <a href="#" class="text-[#00bfff] text-xl hover:text-white transition"><i class="fab fa-facebook"></i></a>
+            <a href="#" class="text-[#00bfff] text-xl hover:text-white transition"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="text-[#00bfff] text-xl hover:text-white transition"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="text-[#00bfff] text-xl hover:text-white transition"><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+    
+      </div>
+    
+      <!-- Copyright -->
+      <div class="text-center text-sm text-[#9d9db8] mt-6 border-t border-[#3c3c53] pt-4">
+        &copy; 2025 Smart Parking. All rights reserved.
+      </div>
+    </footer>
+
+    
+    
+  </div>
+</div>
   </body>
 </html>
