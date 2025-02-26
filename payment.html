@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        
         body {
             background-color: #1a1a2e;
             color: #ffffff;
@@ -191,11 +192,22 @@
         #dispute-section button:hover {
             background: #ff1a1a;
         }
+        
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Smart Parking Payment</h2>
+        
+        <!-- Pre-Registered Vehicle Dropdown -->
+        <label>Select Pre-Registered Vehicle</label>
+        <select id="vehicle-select" onchange="checkPreRegisteredVehicle()">
+            <option value="">Select Vehicle</option>
+            <option value="KA01AB1234">KA01AB1234</option>
+            <option value="KA02CD5678">KA02CD5678</option>
+            <option value="KA03EF9101">KA03EF9101</option>
+        </select>
+
         <label>Parking Hours</label>
         <input type="number" id="parking-hours" placeholder="Enter hours" required oninput="calculateBill()">
         
@@ -256,7 +268,22 @@
 
     <script>
         let walletBalance = 1000; // Default wallet balance
+        let preRegisteredVehicles = {
+            "KA01AB1234": { balance: 500 },
+            "KA02CD5678": { balance: 1000 },
+            "KA03EF9101": { balance: 750 }
+        };
 
+        // Auto-deduction for pre-registered vehicles
+        function checkPreRegisteredVehicle() {
+            let vehicleNumber = document.getElementById('vehicle-select').value;
+            if (preRegisteredVehicles[vehicleNumber]) {
+                alert(`Pre-registered vehicle detected. Wallet balance: Rs. ${preRegisteredVehicles[vehicleNumber].balance}`);
+                walletBalance = preRegisteredVehicles[vehicleNumber].balance; // Update wallet balance
+            }
+        }
+
+        // Calculate parking bill
         function calculateBill() {
             let hours = document.getElementById('parking-hours').value;
             let ratePerHour = 50; // Example rate
@@ -264,11 +291,13 @@
             document.getElementById('amount').value = amount;
         }
 
+        // Select payment method
         function selectPaymentMethod(method) {
             document.querySelector(`input[value="${method}"]`).checked = true;
             showPaymentFields();
         }
 
+        // Show payment fields based on selected method
         function showPaymentFields() {
             let paymentMethod = document.querySelector('input[name="payment-method"]:checked').value;
             let container = document.getElementById('payment-details-container');
@@ -287,6 +316,12 @@
             }
         }
 
+        // Encrypt data (for demonstration purposes)
+        function encryptData(data) {
+            return btoa(data); // Base64 encoding (not secure for production)
+        }
+
+        // Process payment
         function processPayment() {
             let amount = parseFloat(document.getElementById('amount').value);
             let paymentMethod = document.querySelector('input[name="payment-method"]:checked');
@@ -312,6 +347,13 @@
             let finalAmount = amount - discount;
             let breakdownMessage = `Total Bill: Rs. ${amount.toFixed(2)}\nDiscount Applied: Rs. ${discount.toFixed(2)}\nFinal Payable Amount: Rs. ${finalAmount.toFixed(2)}\nPayment Method: ${paymentMethod.value}`;
 
+            // Encrypt payment details (for demonstration)
+            if (paymentMethod.value === 'Credit Card' || paymentMethod.value === 'Debit Card') {
+                let cardNumber = document.getElementById('card-number').value;
+                let encryptedCardNumber = encryptData(cardNumber);
+                breakdownMessage += `\nEncrypted Card Number: ${encryptedCardNumber}`;
+            }
+
             if (paymentMethod.value === 'Digital Wallet') {
                 if (walletBalance < finalAmount) {
                     alert("Insufficient wallet balance!");
@@ -327,6 +369,7 @@
             document.getElementById('dispute-section').style.display = 'block';
         }
 
+        // Download PDF
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -334,10 +377,12 @@
             doc.save("payment_receipt.pdf");
         }
 
+        // Print receipt
         function printReceipt() {
             window.print();
         }
 
+        // Raise dispute
         function raiseDispute() {
             let disputeReason = document.getElementById('dispute-reason').value;
             if (!disputeReason) {
