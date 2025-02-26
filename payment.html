@@ -302,7 +302,13 @@
                 return;
             }
             
-            let discount = promoCode === "DISCOUNT10" ? 0.1 * amount : 0;
+            let discount = 0;
+            if (promoCode === "DISCOUNT10") {
+                discount = 0.1 * amount; // 10% discount
+            } else if (promoCode === "PARKING") {
+                discount = 0.15 * amount; // 15% discount
+            }
+
             let finalAmount = amount - discount;
             let breakdownMessage = `Total Bill: Rs. ${amount.toFixed(2)}\nDiscount Applied: Rs. ${discount.toFixed(2)}\nFinal Payable Amount: Rs. ${finalAmount.toFixed(2)}\nPayment Method: ${paymentMethod.value}`;
 
