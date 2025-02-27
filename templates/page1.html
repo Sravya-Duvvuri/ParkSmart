@@ -48,7 +48,7 @@
           </div>
           <div class="flex flex-1 justify-end gap-8 relative">
             <div class="flex items-center gap-9 relative">
-              <a class="text-white text-sm font-medium leading-normal relative" href="page1.html">
+              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('page1') }}">
                 Home
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
@@ -57,10 +57,10 @@
                   Payment
                 </button>
                 <div id="paymentDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
-                  <a href="credit.html" class="block px-4 py-2 hover:bg-gray-200">Credit</a>
-                  <a href="debit.html" class="block px-4 py-2 hover:bg-gray-200">Debit</a>
-                  <a href="digitalwallet.html" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
-                  <a href="upi.html" class="block px-4 py-2 hover:bg-gray-200">UPI</a>
+                  <a href="{{ url_for('credit') }}" class="block px-4 py-2 hover:bg-gray-200">Credit</a>
+                  <a href="{{ url_for('debit') }}" class="block px-4 py-2 hover:bg-gray-200">Debit</a>
+                  <a href="{{ url_for('digitalwallet') }}" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
+                  <a href="{{ url_for('upi') }}" class="block px-4 py-2 hover:bg-gray-200">UPI</a>
                 </div>
               </div>
               
