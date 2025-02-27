@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>City Parking Slot Availability</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            margin: 20px 0;
+            color: #333;
+        }
+
+        #map {
+            width: 90%;
+            height: 60vh;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .slot-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+
+        .slot-info ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .slot-info li {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .slot-info li.available {
+            border-left: 5px solid #28a745;
+        }
+
+        .slot-info li.occupied {
+            border-left: 5px solid #dc3545;
+        }
+
+        .slot-info button {
+            padding: 5px 10px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .slot-info button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>City Parking Slot Availability</h1>
+    <div id="map"></div>
+    <div class="slot-info" id="slotInfo"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([11.0168, 76.9558], 13);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        function generateParkingData(totalSlots) {
+            const slots = [];
+            for (let i = 1; i <= totalSlots; i++) {
+                const lat = 11.0168 + (Math.random() - 0.5) * 0.01;
+                const lng = 76.9558 + (Math.random() - 0.5) * 0.01;
+                const status = Math.random() > 0.5 ? 'available' : 'occupied';
+                slots.push({
+                    id: `Slot ${i}`,
+                    lat: lat,
+                    lng: lng,
+                    status: status
+                });
+            }
+            return slots;
+        }
+
+        const parkingData = generateParkingData(10);
+
+        function updateMap() {
+            map.eachLayer(layer => {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            const slotInfoDiv = document.getElementById('slotInfo');
+            slotInfoDiv.innerHTML = '<h3>Available Parking Slots:</h3><ul></ul>';
+
+            parkingData.forEach(slot => {
+                const marker = L.marker([slot.lat, slot.lng], {
+                    icon: L.icon({
+                        iconUrl: slot.status === 'available' ? 'https://cdn-icons-png.flaticon.com/512/484/484167.png' : 'https://cdn-icons-png.flaticon.com/512/1828/1828665.png',
+                        iconSize: [32, 32],
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`<b>${slot.id}</b><br>Status: ${slot.status}`);
+
+                const li = document.createElement('li');
+                li.className = slot.status === 'available' ? 'available' : 'occupied';
+                li.innerHTML = `
+                    <span><b>${slot.id}</b> - ${slot.status === 'available' ? 'Available' : 'Booked'}</span>
+                    ${slot.status === 'available' ? `<button onclick="reserveSlot('${slot.id}')">Reserve</button>` : '<button disabled>Reserve</button>'}
+                    <button onclick="getDirections(${slot.lat}, ${slot.lng})">Get Directions</button>
+                `;
+                slotInfoDiv.querySelector('ul').appendChild(li);
+            });
+        }
+
+        function reserveSlot(slotId) {
+            const slot = parkingData.find(s => s.id === slotId);
+            if (slot && slot.status === 'available') {
+                slot.status = 'occupied';
+                alert(`Slot ${slotId} reserved successfully!`);
+                updateMap();
+            } else {
+                alert(`Slot ${slotId} is already occupied.`);
+            }
+        }
+
+        function getDirections(lat, lng) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+                    const googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${lat},${lng}&travelmode=driving`;
+                    window.open(googleMapsUrl, '_blank');
+                }, () => {
+                    alert('Unable to retrieve your location. Please enable location services.');
+                });
+            } else {
+                alert('Geolocation is not supported by your browser.');
+            }
+        }
+
+        updateMap();
+    </script>
+</body>
+</html>
