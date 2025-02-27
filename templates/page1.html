@@ -53,13 +53,17 @@
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
               <div class="relative inline-block text-left">
+                <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('register_vehicle') }}">
+                  Register Vehicle
+                  <button class="absolute inset-0 w-full h-full opacity-0"></button>
+                </a>
                 <button id="paymentButton" class="text-black text-sm font-medium leading-normal relative px-4 py-2 bg-white-600 rounded-md">
                   Payment
                 </button>
                 <div id="paymentDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
                   <a href="{{ url_for('credit') }}" class="block px-4 py-2 hover:bg-gray-200">Credit</a>
                   <a href="{{ url_for('debit') }}" class="block px-4 py-2 hover:bg-gray-200">Debit</a>
-                  <a href="{{ url_for('digitalwallet') }}" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
+                  <a href="{{ url_for('wallet') }}" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
                   <a href="{{ url_for('upi') }}" class="block px-4 py-2 hover:bg-gray-200">UPI</a>
                 </div>
               </div>
@@ -76,11 +80,11 @@
                   }
                 });
               </script>
-              <a class="text-white text-sm font-medium leading-normal relative" href="navigation.html">
+              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('navigation') }}">
                 Navigation
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
-              <a class="text-white text-sm font-medium leading-normal relative" href="detection.html">
+              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('detection') }}">
                  Detection
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>

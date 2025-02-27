@@ -1,14 +1,14 @@
-from flask import Flask, request, redirect, url_for, session, render_template
+from flask import Flask, request, redirect, url_for, session, render_template, jsonify
 import mysql.connector
 from mysql.connector import Error
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
 
-# 1) Create the database and table if they don't exist
+# 1) Create the database and tables if they don't exist
 def create_db_and_table():
     try:
-        # Connect to MySQL (no specific database yet)
+        # Connect to MySQL (without specifying a database)
         conn = mysql.connector.connect(
             host="localhost",
             user="root",
@@ -16,14 +16,12 @@ def create_db_and_table():
         )
         cursor = conn.cursor()
 
-        # Create a new database if it doesn't exist
+        # Create the database if it doesn't exist
         cursor.execute("CREATE DATABASE IF NOT EXISTS my_app_db")
-
-        # Switch to the new database
         cursor.execute("USE my_app_db")
 
-        # Create a new table if it doesn't exist
-        create_table_query = """
+        # Create Users Table
+        create_users_table = """
         CREATE TABLE IF NOT EXISTS tbl_users (
             id INT AUTO_INCREMENT PRIMARY KEY,
             licence VARCHAR(50),
@@ -34,16 +32,56 @@ def create_db_and_table():
             dob DATE
         );
         """
-        cursor.execute(create_table_query)
-        conn.commit()
+        cursor.execute(create_users_table)
 
+        # Create Payments Table
+        create_payments_table = """
+        CREATE TABLE IF NOT EXISTS payments (
+            payment_id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(100),
+            amount DECIMAL(10,2),
+            payment_method VARCHAR(50),
+            promo_code VARCHAR(20),
+            final_amount DECIMAL(10,2),
+            transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (email) REFERENCES tbl_users(email) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_payments_table)
+
+        # Create Vehicles Table using user's email as foreign key
+        create_vehicles_table = """
+        CREATE TABLE IF NOT EXISTS tbl_vehicles (
+            vehicle_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_email VARCHAR(100),
+            vehicle_number VARCHAR(50),
+            vehicle_model VARCHAR(100),
+            vehicle_color VARCHAR(50),
+            registration_year INT,
+            FOREIGN KEY (user_email) REFERENCES tbl_users(email) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_vehicles_table)
+
+        # Create Wallets Table with default balance of 1000
+        create_wallets_table = """
+        CREATE TABLE IF NOT EXISTS tbl_wallets (
+            wallet_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_email VARCHAR(100),
+            balance DECIMAL(10,2) DEFAULT 1000,
+            FOREIGN KEY (user_email) REFERENCES tbl_users(email) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_wallets_table)
+
+        conn.commit()
         cursor.close()
         conn.close()
-        print("Database and table created (if they did not exist).")
+        print("Database and tables created (if they did not exist).")
     except Error as e:
-        print("Error creating database or table:", e)
+        print("Error creating database or tables:", e)
 
-# 2) A helper function to get a connection **to** that new database
+# 2) Helper function to get a connection to the database
 def get_db_connection():
     try:
         conn = mysql.connector.connect(
@@ -61,13 +99,11 @@ def get_db_connection():
 
 @app.route("/")
 def home():
-    # Redirect to the register page by default
     return redirect(url_for("register"))
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        # Retrieve data from form fields in register.html
         licence = request.form.get("licence")
         name = request.form.get("name")
         email = request.form.get("email")
@@ -76,11 +112,9 @@ def register():
         phone = request.form.get("phone")
         dob = request.form.get("dob")
 
-        # Simple server-side check if passwords match
         if password != confirm_password:
             return "Passwords do not match. <a href='/register'>Try again</a>"
 
-        # Insert into MySQL
         conn = get_db_connection()
         if conn is None:
             return "Database connection failed!"
@@ -92,47 +126,56 @@ def register():
             """
             cursor.execute(insert_query, (licence, name, email, password, phone, dob))
             conn.commit()
+
+            # Automatically register a wallet with default balance 1000
+            insert_wallet_query = "INSERT INTO tbl_wallets (user_email) VALUES (%s)"
+            cursor.execute(insert_wallet_query, (email,))
+            conn.commit()
+
             cursor.close()
             conn.close()
-
             return redirect(url_for("login"))
         except Error as e:
             return f"Error inserting data: {e}"
-
-    # On GET, render your existing register.html
     return render_template("register.html")
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        # Retrieve data from form fields in login.html
         email = request.form.get("email")
         password = request.form.get("password")
-
         conn = get_db_connection()
         if conn is None:
             return "Database connection failed!"
         try:
             cursor = conn.cursor(dictionary=True)
-            select_query = """
-            SELECT * FROM tbl_users
-            WHERE email = %s AND password = %s
-            """
+            select_query = "SELECT * FROM tbl_users WHERE email = %s AND password = %s"
             cursor.execute(select_query, (email, password))
             user = cursor.fetchone()
-            cursor.close()
-            conn.close()
-
             if user:
-                # User authenticated -> store session data
                 session["user_id"] = user["id"]
+                session["email"] = user["email"]
+
+                # Ensure a wallet record exists for this user
+                cursor2 = conn.cursor()
+                select_wallet_query = "SELECT * FROM tbl_wallets WHERE user_email = %s"
+                cursor2.execute(select_wallet_query, (email,))
+                wallet = cursor2.fetchone()
+                if wallet is None:
+                    insert_wallet_query = "INSERT INTO tbl_wallets (user_email) VALUES (%s)"
+                    cursor2.execute(insert_wallet_query, (email,))
+                    conn.commit()
+                cursor2.close()
+
+                cursor.close()
+                conn.close()
                 return redirect(url_for("page1"))
             else:
+                cursor.close()
+                conn.close()
                 return redirect(url_for("login"))
         except Error as e:
             return f"Error during login: {e}"
-
-    # On GET, render your existing login.html
     return render_template("login.html")
 
 @app.route("/page1")
@@ -148,10 +191,6 @@ def credit():
 @app.route("/debit")
 def debit():
     return render_template("debit.html")
-
-@app.route("/digitalwallet")
-def digitalwallet():
-    return render_template("digitalwallet.html")
 
 @app.route("/payment")
 def payment():
@@ -169,8 +208,120 @@ def upipay():
 def wallet():
     return render_template("wallet.html")
 
-# 4) Start the app
+@app.route("/navigation")
+def navigation():
+    return render_template("navigation.html")
+
+@app.route("/detection")
+def detection():
+    return render_template("detection.html")
+
+@app.route("/register_vehicle", methods=["GET", "POST"])
+def register_vehicle():
+    if request.method == "POST":
+        user_email = session.get("email")
+        vehicle_number = request.form.get("vehicle_number")
+        vehicle_model = request.form.get("vehicle_model")
+        vehicle_color = request.form.get("vehicle_color")
+        registration_year = request.form.get("registration_year")
+        if not user_email:
+            return "User not logged in. Please login first."
+        conn = get_db_connection()
+        if conn is None:
+            return "Database connection failed!"
+        try:
+            cursor = conn.cursor()
+            insert_query = """
+            INSERT INTO tbl_vehicles (user_email, vehicle_number, vehicle_model, vehicle_color, registration_year)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (user_email, vehicle_number, vehicle_model, vehicle_color, registration_year))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return redirect(url_for("page1"))
+        except Error as e:
+            return f"Error inserting vehicle data: {e}"
+    return render_template("register_vehicle.html")
+
+# Endpoint: Get registered vehicles for the logged-in user
+@app.route("/get_user_vehicles")
+def get_user_vehicles():
+    if "email" not in session:
+        return jsonify({"vehicles": []})
+    email = session["email"]
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"vehicles": []})
+    cursor = conn.cursor()
+    cursor.execute("SELECT vehicle_number FROM tbl_vehicles WHERE user_email = %s", (email,))
+    vehicles = [row[0] for row in cursor.fetchall()]
+    cursor.close()
+    conn.close()
+    return jsonify({"vehicles": vehicles})
+
+# Endpoint: Get current wallet balance for the logged-in user
+@app.route("/get_wallet_balance")
+def get_wallet_balance():
+    if "email" not in session:
+        return jsonify({"balance": 0})
+    email = session["email"]
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"balance": 0})
+    cursor = conn.cursor()
+    cursor.execute("SELECT balance FROM tbl_wallets WHERE user_email = %s", (email,))
+    result = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return jsonify({"balance": result[0] if result else 0})
+
+# Endpoint: Process wallet payment – deduct the amount and record the transaction
+@app.route("/process_wallet_payment", methods=["POST"])
+def process_wallet_payment():
+    if "email" not in session:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+    data = request.get_json()
+    try:
+        final_amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid amount provided"}), 400
+    payment_method = data.get("payment_method")
+    promo_code = data.get("promo_code")
+    email = session["email"]
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT balance FROM tbl_wallets WHERE user_email = %s", (email,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({"success": False, "error": "Wallet record not found"}), 400
+        current_balance = float(result[0])
+        if current_balance < final_amount:
+            cursor.close()
+            conn.close()
+            return jsonify({"success": False, "error": "Insufficient wallet balance"}), 400
+
+        cursor.execute("UPDATE tbl_wallets SET balance = balance - %s WHERE user_email = %s", (final_amount, email))
+        conn.commit()
+
+        cursor.execute(
+            "INSERT INTO payments (email, amount, payment_method, promo_code, final_amount) VALUES (%s, %s, %s, %s, %s)",
+            (email, final_amount, payment_method, promo_code, final_amount)
+        )
+        conn.commit()
+
+        cursor.execute("SELECT balance FROM tbl_wallets WHERE user_email = %s", (email,))
+        updated_balance = float(cursor.fetchone()[0])
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "remaining_balance": updated_balance})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 if __name__ == "__main__":
-    # Create DB & table if not exist
     create_db_and_table()
     app.run(debug=True)
