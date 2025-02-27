@@ -13,21 +13,10 @@
 
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <style>
-      a, h2, svg {
-        color: black !important;
-      }
-      body {
-        background-color: black;
-      }
-      .header-buttons {
-        color: black !important;
-        background-color: transparent !important; /* Set background to transparent */
-        border-color: transparent !important; /* Remove border color if needed */
-      }
+ a, h2, svg {
+  color: black !important;
+}
 
-      .header-buttons:hover {
-        background-color: rgba(51, 51, 51, 0.1) !important; /* Optional: Add a subtle hover effect */
-      }
     </style>
   </head>
 
@@ -64,7 +53,11 @@
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
               <div class="relative inline-block text-left">
-                <button id="paymentButton" class="header-buttons text-sm font-medium leading-normal relative px-4 py-2 rounded-md">
+                <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('register_vehicle') }}">
+                  Register Vehicle
+                  <button class="absolute inset-0 w-full h-full opacity-0"></button>
+                </a>
+                <button id="paymentButton" class="text-black text-sm font-medium leading-normal relative px-4 py-2 bg-white-600 rounded-md">
                   Payment
                 </button>
                 <div id="paymentDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
@@ -75,11 +68,7 @@
                 </div>
               </div>
               
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('register_vehicle') }}">
-                Register Vehicle
-                <button class="absolute inset-0 w-full h-full opacity-0"></button>
-              </a>
-
+              
               <!-- Navigation Dropdown -->
               <div class="relative inline-block text-left ml-4">
                 <button id="navigationButton" class="header-buttons text-sm font-medium leading-normal relative px-4 py-2 rounded-md">
@@ -87,7 +76,7 @@
                 </button>
                 <div id="navigationDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
                   <a href="{{ url_for('navigation') }}" class="block px-4 py-2 hover:bg-gray-200">Route</a>
-                  <a href="{{ url_for('map') }}" class="block px-4 py-2 hover:bg-gray-200">Map</a>
+                  <a href="map.html" class="block px-4 py-2 hover:bg-gray-200">Map</a>
                 </div>
               </div>
               
@@ -118,11 +107,11 @@
                 toggleDropdown('paymentButton', 'paymentDropdown');
                 toggleDropdown('navigationButton', 'navigationDropdown');
               </script>
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('detection') }}">
+              <a class="text-white text-sm font-medium leading-normal relative" href="/detection">
                  Detection
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('detection2') }}">
+              <a class="text-white text-sm font-medium leading-normal relative" href="detection2.html">
                 SCAN 
                <button class="absolute inset-0 w-full h-full opacity-0"></button>
              </a>
@@ -138,21 +127,14 @@
             <div class="@container">
               <div class="@[480px]:p-4">
                 <div
-                  class="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat 
-                         @[480px]:gap-8 @[480px]:rounded-xl items-start justify-end px-4 pb-10 
-                         @[480px]:px-10 transition-all duration-300 hover:animate-pulse"
-                  style='background-image: linear-gradient(rgba(49, 49, 49, 0.306) 0%, rgba(0, 0, 0, 0.4) 100%), 
-                         url("https://img.freepik.com/premium-photo/blur-focus-underground-car-park-large-department-store_78212-416.jpg");'
-                >
-                  <div class="w-full flex flex-col items-start justify-start mt-auto absolute bottom-15 left-20.9">
-                    <h1 class="text-white text-5xl font-black text-left">
-                      <center>Find and book parking the easy way</center>
-                    </h1>
-                  </div>
-                </div>
-              </div>
+                class="flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat @[480px]:gap-8 @[480px]:rounded-xl items-start justify-end px-4 pb-10 @[480px]:px-10"
+                style='background-image: linear-gradient(rgba(49, 49, 49, 0.306) 0%, rgba(0, 0, 0, 0.4) 100%), url("https://img.freepik.com/premium-photo/blur-focus-underground-car-park-large-department-store_78212-416.jpg");'
+              >
+              <div class="w-full flex flex-col items-start justify-start mt-auto absolute bottom-15 left-20.9">
+                <h1 class="text-white text-5xl font-black text-left">
+                    <center>Find and book parking the easy way</center>
+                </h1>
             </div>
-            
                   
 
                   <label class="flex flex-col min-w-40 h-14 w-full max-w-[480px] @[480px]:h-16">
@@ -177,58 +159,92 @@
 
 
           <div class="p-4 @container">
+  <div class="flex flex-1 flex-col items-start justify-between gap-4 rounded-xl border border-[#3c3c53] bg-[#111118] p-5 @[480px]:flex-row @[480px]:items-center">
+    <div class="flex flex-col gap-1">
+      <p class="text-white text-base font-bold leading-tight">
+        Get a push notification when you're close to your destination
+      </p>
+      <p class="text-[#9d9db8] text-base font-normal leading-normal">
+        We use your location to send you a notification when you're close to your destination. You can enable or disable this feature at any time in your settings.
+      </p>
+    </div>
+    <label class="relative flex h-[31px] w-[51px] cursor-pointer items-center rounded-full border-none bg-[#292938] p-0.5 has-[:checked]:justify-end has-[:checked]:bg-[#1919e6]">
+      <div class="h-full w-[27px] rounded-full bg-white" style="box-shadow: rgba(0, 0, 0, 0.15) 0px 3px 8px, rgba(0, 0, 0, 0.06) 0px 3px 1px;"></div>
+      <input type="checkbox" class="invisible absolute" />
+    </label>
+  </div>
 </div>
 
 <div class="flex flex-col gap-10 px-4 py-10 @container text-center">
-  <h1 class="text-[32px] font-bold leading-tight mx-auto 
-  sm:text-4xl sm:font-black sm:leading-tight sm:tracking-[-0.033em] 
-  bg-gradient-to-r from-[#00bfff] to-[#3c3c53] text-transparent bg-clip-text 
-  animate-fade-up">
- LET'S DRIVE IN ...
-</h1>
-
+  <h1 class="text-white text-[32px] font-bold leading-tight @[480px]:text-4xl @[480px]:font-black @[480px]:leading-tight @[480px]:tracking-[-0.033em] mx-auto">
+    LET'S DRIVE IN ...
+  </h1>
   <div class="text-center text-white p-5 max-w-[700px] mx-auto">
     <h2 class="text-[#00bfff] text-2xl mb-2">About Us</h2>
-    <p class="text-xl mb-4 font-serif bg-[#e0e0e0] text-black rounded-lg p-4 shadow-md 
-    transition-transform transform hover:scale-105 hover:shadow-lg 
-    font-[Poppins] tracking-wide leading-relaxed">
-   Welcome to <strong>Smart Parking Management System</strong>, your ultimate solution for hassle-free parking. 
-   Our goal is to revolutionize urban mobility by providing real-time, efficient, and user-friendly parking solutions.
- </p>
- 
+    <p class="text-xl mb-4 font-serif">
+      Welcome to <strong>Smart Parking Management System</strong>, your ultimate solution for hassle-free parking. Our goal is to revolutionize urban mobility by providing real-time, efficient, and user-friendly parking solutions.
+    </p>
+    <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md">
+      <h3 class="text-[#00bfff] text-lg mb-3"><strong>What We Offer</strong></h3>
+      
+      <p class="text-lg mt-2"><strong>🚗 Turn-by-Turn Navigation:</strong></p>
+      <p class="text-[#9d9db8]">Get real-time directions to your assigned parking slot.</p>
 
-    <br>
-    <br>
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-lg">
-        <h3 class="text-[#00bfff] text-lg mb-3"><strong>🚗 Turn-by-Turn Navigation</strong></h3>
-        <p class="text-[#9d9db8]">Get real-time directions to your assigned parking slot.</p>
-      </div>
-    
-      <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-lg">
-        <h3 class="text-[#00bfff] text-lg mb-3"><strong>📊 Vehicle Detection</strong></h3>
-        <p class="text-[#9d9db8]">Being detected easily without making it complex</p>
-      </div>
-    
-      <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-lg">
-        <h3 class="text-[#00bfff] text-lg mb-3"><strong>📍 Nearby Parking Spots</strong></h3>
-        <p class="text-[#9d9db8]">Find the closest available parking areas and reserve</p>
-      </div>
-    
-      <div class="border border-[grey] bg-[#3c3c53] p-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hover:shadow-lg">
-        <h3 class="text-[#00bfff] text-lg mb-3"><strong>📜 seamless payment</strong></h3>
-        <p class="text-[#9d9db8]">Make the payments simpler and easier</p>
-      </div>
+      <p class="text-lg mt-2"><strong>📊 Parking Status:</strong></p>
+      <p class="text-[#9d9db8]">Stay updated with live parking slot availability.</p>
+
+      <p class="text-lg mt-2"><strong>📍 Nearby Parking Spots:</strong></p>
+      <p class="text-[#9d9db8]">Find the closest available parking areas.</p>
+
+      <p class="text-lg mt-2"><strong>📜 Parking History:</strong></p>
+      <p class="text-[#9d9db8]">Track your past parking sessions and payments.</p>
     </div>
-    
-    <br>
-    <br>
     <p class="text-sm mt-4">
       Our system leverages advanced technology to create a <strong>smarter, more efficient parking ecosystem</strong>. Join us in shaping the future of urban mobility! 🚀
     </p>
-    
+  </div>
+</div>
 
             
+            <div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-3 pb-3">
+              <!-- Additional Content Goes Here -->
+            </div>
+            
+                    
+                
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 pb-6">
+              <!-- First Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-map-marked-alt"></i> Turn-by-Turn Navigation</h3>
+                <p class="mt-2">Get real-time directions to your assigned parking slot.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">View Map</button>
+              </div>
+            
+              <!-- Second Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-car"></i> Parking Status</h3>
+                <p class="mt-2">Check the availability of parking slots in real-time.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">Check Status</button>
+              </div>
+            
+              <!-- Third Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-map"></i> Nearby Parking Spots</h3>
+                <p class="mt-2">Find the closest available parking spots near your location.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">Find Spots</button>
+              </div>
+            
+              <!-- Fourth Column -->
+              <div class="p-4 animate__animated animate__fadeInLeft text-white border border-white rounded-lg shadow-lg text-center bg-dark">
+                <h3 class="text-lg font-bold"><i class="fas fa-ticket-alt"></i> Parking History</h3>
+                <p class="mt-2">View your past parking sessions and payments.</p>
+                <button class="mt-3 w-full md:w-[300px] bg-blue-500 text-white rounded-lg py-2">View History</button>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+    
 
     <script src="script.js"></script>
 

@@ -20,14 +20,14 @@
         background-color: black;
       }
       .header-buttons {
-        color: black !important;
-        background-color: transparent !important; /* Set background to transparent */
-        border-color: transparent !important; /* Remove border color if needed */
-      }
+  color: black !important;
+  background-color: transparent !important; /* Set background to transparent */
+  border-color: transparent !important; /* Remove border color if needed */
+}
 
-      .header-buttons:hover {
-        background-color: rgba(51, 51, 51, 0.1) !important; /* Optional: Add a subtle hover effect */
-      }
+.header-buttons:hover {
+  background-color: rgba(51, 51, 51, 0.1) !important; /* Optional: Add a subtle hover effect */
+}
     </style>
   </head>
 
@@ -59,7 +59,7 @@
           </div>
           <div class="flex flex-1 justify-end gap-8 relative">
             <div class="flex items-center gap-9 relative">
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('page1') }}">
+              <a class="text-white text-sm font-medium leading-normal relative" href="page1.html">
                 Home
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
@@ -68,26 +68,21 @@
                   Payment
                 </button>
                 <div id="paymentDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
-                  <a href="{{ url_for('credit') }}" class="block px-4 py-2 hover:bg-gray-200">Credit</a>
-                  <a href="{{ url_for('debit') }}" class="block px-4 py-2 hover:bg-gray-200">Debit</a>
-                  <a href="{{ url_for('wallet') }}" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
-                  <a href="{{ url_for('upi') }}" class="block px-4 py-2 hover:bg-gray-200">UPI</a>
+                  <a href="credit.html" class="block px-4 py-2 hover:bg-gray-200">Credit</a>
+                  <a href="debit.html" class="block px-4 py-2 hover:bg-gray-200">Debit</a>
+                  <a href="digitalwallet.html" class="block px-4 py-2 hover:bg-gray-200">Digital Wallet</a>
+                  <a href="upi.html" class="block px-4 py-2 hover:bg-gray-200">UPI</a>
                 </div>
               </div>
               
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('register_vehicle') }}">
-                Register Vehicle
-                <button class="absolute inset-0 w-full h-full opacity-0"></button>
-              </a>
-
               <!-- Navigation Dropdown -->
               <div class="relative inline-block text-left ml-4">
                 <button id="navigationButton" class="header-buttons text-sm font-medium leading-normal relative px-4 py-2 rounded-md">
                   Navigation
                 </button>
                 <div id="navigationDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
-                  <a href="{{ url_for('navigation') }}" class="block px-4 py-2 hover:bg-gray-200">Route</a>
-                  <a href="{{ url_for('map') }}" class="block px-4 py-2 hover:bg-gray-200">Map</a>
+                  <a href="navigation.html" class="block px-4 py-2 hover:bg-gray-200">Route</a>
+                  <a href="map.html" class="block px-4 py-2 hover:bg-gray-200">Map</a>
                 </div>
               </div>
               
@@ -118,11 +113,11 @@
                 toggleDropdown('paymentButton', 'paymentDropdown');
                 toggleDropdown('navigationButton', 'navigationDropdown');
               </script>
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('detection') }}">
+              <a class="text-white text-sm font-medium leading-normal relative" href="detection.html">
                  Detection
                 <button class="absolute inset-0 w-full h-full opacity-0"></button>
               </a>
-              <a class="text-white text-sm font-medium leading-normal relative" href="{{ url_for('detection2') }}">
+              <a class="text-white text-sm font-medium leading-normal relative" href="detection2.html">
                 SCAN 
                <button class="absolute inset-0 w-full h-full opacity-0"></button>
              </a>
@@ -229,6 +224,7 @@
     
 
             
+
 
     <script src="script.js"></script>
 

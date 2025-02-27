@@ -212,9 +212,19 @@ def wallet():
 def navigation():
     return render_template("navigation.html")
 
+# Note: If you intended to have a detection page, add a route for it.
+# For example, to fix the broken link in page1.html, you can add:
 @app.route("/detection")
 def detection():
     return render_template("detection.html")
+
+@app.route("/detection2")
+def detection2():
+    return render_template("detection2.html")
+
+@app.route("/map")
+def map():
+    return render_template("map.html")
 
 @app.route("/register_vehicle", methods=["GET", "POST"])
 def register_vehicle():
