@@ -1,3 +1,4 @@
+import flask
 from flask import Flask, request, redirect, url_for, session, render_template, jsonify
 import mysql.connector
 from mysql.connector import Error
