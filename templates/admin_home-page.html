@@ -44,20 +44,33 @@
         </div>
         <div class="flex flex-1 justify-end gap-8">
           <div class="flex items-center gap-6">
-            <a class="text-black text-sm font-medium hover:bg-gray-300 px-3 py-2 rounded-md" href="admin_dashboard.html">
-              Dashboard
-            </a>
+
+            <!-- Dropdown for Dashboard -->
+            <div class="relative inline-block text-left">
+              <button id="dashboardButton" class="block px-4 py-2 hover:bg-gray-300 rounded-md">
+                Dashboard 
+              </button>
+              <div id="navigationDropdown" class="absolute hidden bg-white text-black shadow-lg rounded-md mt-1 w-40">
+                <a href="admin_dashboard.html" class="block px-4 py-2 hover:bg-gray-200">Dashboard</a>
+                <a href="admin_dataexport.html" class="block px-4 py-2 hover:bg-gray-200">Export</a>
+              </div>
+            </div>
+
+            <!-- Navigation Links -->
             <a class="text-black text-sm font-medium transition duration-300 hover:bg-gray-300 px-3 py-2 rounded-md" href="admin_tracking.html">
-                Tracking
-              </a>
+              Tracking
+            </a>
             
             <a class="text-black text-sm font-medium hover:bg-gray-300 px-3 py-2 rounded-md" href="admin_navigation.html">
               Navigation
             </a>
+
             <a class="text-black text-sm font-medium transition duration-300 hover:bg-gray-300 px-3 py-2 rounded-md" href="admin_datainsights.html">
-                Insights
-              </a>
-              
+              Insights
+            </a>
+
+            <!-- Notifications Button -->
+         
           </div>
         </div>
       </header>
@@ -102,9 +115,15 @@
   </div>
 
   <script>
-    // JavaScript for Notifications Button Click
-    document.getElementById("notificationsButton").addEventListener("click", function() {
-      window.location.href = "notifications.html"; // Redirects to notifications page
+    // Toggle Dropdown for Dashboard
+    document.getElementById("dashboardButton").addEventListener("click", function () {
+      var dropdown = document.getElementById("navigationDropdown");
+      dropdown.classList.toggle("hidden");
+    });
+
+    // Redirect to Notifications Page
+    document.getElementById("notificationsButton").addEventListener("click", function () {
+      window.location.href = "notifications.html";
     });
   </script>
 </body>
