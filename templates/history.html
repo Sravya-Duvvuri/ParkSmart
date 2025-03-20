@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parking History</title>
+    <title>Parking History & Loyalty Program</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -111,11 +111,32 @@
         #export-options button {
             margin: 0 10px;
         }
+
+        .loyalty-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .loyalty-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .loyalty-section p {
+            font-size: 16px;
+        }
+
+        .loyalty-section button {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Parking History</h2>
+        <h2>Parking History & Loyalty Program</h2>
 
         <!-- Search and Filter Section -->
         <div>
@@ -133,30 +154,34 @@
                     <th>Hours</th>
                     <th>Amount (Rs.)</th>
                     <th>Payment Method</th>
+                    <th>Points Earned</th>
                 </tr>
             </thead>
             <tbody>
                 <!-- Example Data -->
                 <tr>
-                    <td>2025-03-01</td>
+                    <td>2023-10-01</td>
                     <td>Main Parking Lot</td>
                     <td>2</td>
                     <td>100</td>
                     <td>UPI</td>
+                    <td>10</td>
                 </tr>
                 <tr>
-                    <td>2025-02-05</td>
+                    <td>2023-10-05</td>
                     <td>City Center Parking</td>
                     <td>4</td>
                     <td>200</td>
                     <td>Debit Card</td>
+                    <td>20</td>
                 </tr>
                 <tr>
-                    <td>2025-03-10</td>
+                    <td>2023-10-10</td>
                     <td>Airport Parking</td>
                     <td>6</td>
                     <td>300</td>
                     <td>Credit Card</td>
+                    <td>30</td>
                 </tr>
             </tbody>
         </table>
@@ -165,6 +190,14 @@
         <div id="export-options">
             <button onclick="exportToPDF()">Export to PDF</button>
             <button onclick="exportToCSV()">Export to CSV</button>
+        </div>
+
+        <!-- Loyalty Program Section -->
+        <div class="loyalty-section">
+            <h3>Loyalty Program</h3>
+            <p>Total Points Earned: <span id="total-points">60</span></p>
+            <p>Redeem your points for discounts!</p>
+            <button onclick="redeemPoints()">Redeem Points</button>
         </div>
     </div>
 
@@ -231,6 +264,30 @@
             document.body.appendChild(link);
             link.click();
         }
+
+        // Function to calculate total loyalty points
+        function calculateTotalPoints() {
+            let rows = document.querySelectorAll("#history-table tbody tr");
+            let totalPoints = 0;
+            rows.forEach(row => {
+                totalPoints += parseInt(row.cells[5].textContent);
+            });
+            document.getElementById("total-points").textContent = totalPoints;
+        }
+
+        // Function to redeem loyalty points
+        function redeemPoints() {
+            let totalPoints = parseInt(document.getElementById("total-points").textContent);
+            if (totalPoints >= 50) {
+                alert(`You have successfully redeemed ${totalPoints} points for a 10% discount on your next payment!`);
+                document.getElementById("total-points").textContent = 0; // Reset points after redemption
+            } else {
+                alert("You need at least 50 points to redeem a discount.");
+            }
+        }
+
+        // Calculate total points on page load
+        calculateTotalPoints();
     </script>
 </body>
 </html>
