@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Payment Tracking & Fraud Detection</title> <!-- Updated Title -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            color: #00d4ff;
+            font-size: 14px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #00d4ff;
+            background: #1a1a2e;
+            color: #ffffff;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: #00b8e6;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #00b8e6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #00d4ff;
+        }
+
+        th {
+            background-color: #1a1a2e;
+            color: #00d4ff;
+        }
+
+        tr:hover {
+            background-color: #1a1a2e;
+        }
+
+        .analytics-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .analytics-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .analytics-section p {
+            font-size: 16px;
+        }
+
+        .alert {
+            padding: 10px;
+            background: #ff4d4d;
+            color: #000;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            cursor: pointer; /* Make it clickable */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Admin Dashboard</h2>
+
+        <!-- Filter Section -->
+        <div>
+            <label for="filter-user">Filter by User:</label>
+            <input type="text" id="filter-user" placeholder="Enter user email">
+            
+            <label for="filter-method">Filter by Payment Method:</label>
+            <select id="filter-method">
+                <option value="">All Methods</option>
+                <option value="UPI">UPI</option>
+                <option value="Debit Card">Debit Card</option>
+                <option value="Credit Card">Credit Card</option>
+            </select>
+
+            <label for="filter-date">Filter by Date:</label>
+            <input type="text" id="filter-date" placeholder="Enter date (YYYY-MM-DD)">
+
+            <button onclick="filterTransactions()">Apply Filters</button>
+        </div>
+
+        <!-- Transactions Table -->
+        <table id="transactions-table">
+            <thead>
+                <tr>
+                    <th>User Email</th>
+                    <th>Date</th>
+                    <th>Amount (Rs.)</th>
+                    <th>Payment Method</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Transactions will be populated here -->
+            </tbody>
+        </table>
+
+        <!-- Fraud Detection Alerts -->
+        <div id="fraud-alerts" class="alert" style="display: none;" onclick="showFraudTransactions()">
+            <strong>Fraud Alert:</strong> Suspicious transaction detected! Click to view.
+        </div>
+
+        <!-- Revenue Analytics Section -->
+        <div class="analytics-section">
+            <h3>Revenue Analytics</h3>
+            <p>Total Revenue: Rs. <span id="total-revenue">0</span></p>
+            <p>Transactions Today: <span id="transactions-today">0</span></p>
+            <p>Average Transaction Value: Rs. <span id="average-transaction">0</span></p>
+        </div>
+    </div>
+
+    <script>
+        // Sample transaction data (replace with data from localStorage or backend)
+        let transactions = [
+            { email: "bhavyakosuri@gmail.com", date: "2025-03-21", amount: 100, method: "UPI", status: "Success" },
+            { email: "yaminisinha@gmail.com", date: "2025-03-21", amount: 200, method: "Debit Card", status: "Success" },
+            { email: "sravyaduvvuri@gmail.com", date: "2025-03-21", amount: 300, method: "Credit Card", status: "Failed" },
+            { email: "mahisrinagireddy@gmail.com", date: "2025-03-21", amount: 300, method: "Credit Card", status: "Failed" },
+            { email: "yaminisinha@gmail.com", date: "2025-03-19", amount: 450, method: "Debit Card", status: "Failed" },
+            { email: "bhavyakosuri@gmail.com", date: "2025-03-20", amount: 270, method: "Credit Card", status: "Success" },
+            { email: "bhavyakosuri@gmail.com", date: "2025-03-19", amount: 300, method: "Debit Card", status: "Success" },
+            { email: "bhavyakosuri@gmail.com", date: "2025-03-18", amount: 450, method: "UPI", status: "Success" },
+            { email: "abhinakrishnam@gmail.com", date: "2025-03-20", amount: 5000, method: "UPI", status: "Success" } // Suspicious transaction
+        ];
+
+        // Function to populate the transactions table
+        function populateTable(data) {
+            let tableBody = document.querySelector("#transactions-table tbody");
+            tableBody.innerHTML = data.map(transaction => `
+                <tr>
+                    <td>${transaction.email}</td>
+                    <td>${transaction.date}</td>
+                    <td>${transaction.amount}</td>
+                    <td>${transaction.method}</td>
+                    <td>${transaction.status}</td>
+                </tr>
+            `).join("");
+            document.getElementById("transactions-table").style.display = "table"; // Show the table
+        }
+
+        // Function to filter transactions
+        function filterTransactions() {
+            let userFilter = document.getElementById("filter-user").value.toLowerCase();
+            let methodFilter = document.getElementById("filter-method").value;
+            let dateFilter = document.getElementById("filter-date").value;
+
+            let filteredData = transactions.filter(transaction => {
+                return (userFilter === "" || transaction.email.toLowerCase().includes(userFilter)) &&
+                       (methodFilter === "" || transaction.method === methodFilter) &&
+                       (dateFilter === "" || transaction.date === dateFilter);
+            });
+
+            populateTable(filteredData);
+            checkForFraud(filteredData);
+            updateAnalytics(filteredData);
+        }
+
+        // Function to check for fraudulent transactions
+        function checkForFraud(data) {
+            let fraudDetected = data.some(transaction => transaction.amount > 1000 && transaction.status === "Success");
+            document.getElementById("fraud-alerts").style.display = fraudDetected ? "block" : "none";
+        }
+
+        // Function to show only fraudulent transactions
+        function showFraudTransactions() {
+            let fraudData = transactions.filter(transaction => transaction.amount > 1000 && transaction.status === "Success");
+            populateTable(fraudData);
+        }
+
+        // Function to update revenue analytics
+        function updateAnalytics(data) {
+            let totalRevenue = data.reduce((sum, transaction) => sum + (transaction.status === "Success" ? transaction.amount : 0), 0);
+            let transactionsToday = data.filter(transaction => transaction.date === "2025-03-21").length; // Hardcoded for testing
+            let averageTransaction = data.length > 0 ? totalRevenue / data.length : 0;
+
+            document.getElementById("total-revenue").textContent = totalRevenue.toFixed(2);
+            document.getElementById("transactions-today").textContent = transactionsToday;
+            document.getElementById("average-transaction").textContent = averageTransaction.toFixed(2);
+        }
+
+        // Initial load
+        updateAnalytics(transactions);
+        checkForFraud(transactions);
+    </script>
+</body>
+</html>
