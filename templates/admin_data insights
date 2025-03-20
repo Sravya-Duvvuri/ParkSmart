@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Parking Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #1a1a2e;
+            color: #ffffff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #16213e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            color: #00d4ff;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            color: #00d4ff;
+            font-size: 14px;
+        }
+
+        input[type="text"], select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border-radius: 8px;
+            border: 1px solid #00d4ff;
+            background: #1a1a2e;
+            color: #ffffff;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            border-color: #00b8e6;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: #00d4ff;
+            color: #000;
+            border: none;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #00b8e6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #00d4ff;
+        }
+
+        th {
+            background-color: #1a1a2e;
+            color: #00d4ff;
+        }
+
+        tr:hover {
+            background-color: #1a1a2e;
+        }
+
+        .analytics-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .analytics-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .analytics-section p {
+            font-size: 16px;
+        }
+
+        .alert {
+            padding: 10px;
+            background: #ff4d4d;
+            color: #000;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .forecast-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #1a1a2e;
+            border-radius: 8px;
+        }
+
+        .forecast-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+        }
+
+        .forecast-section p {
+            font-size: 16px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .success-message {
+            color: #00ff00;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .error-message {
+            color: #ff4d4d;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Admin Dashboard - Smart Parking Management</h2>
+
+        <!-- Real-Time System Performance Monitoring -->
+        <div class="analytics-section">
+            <h3>Real-Time System Performance</h3>
+            <div class="chart-container">
+                <canvas id="performanceChart"></canvas>
+            </div>
+            <button onclick="checkForAnomalies()">Check for Anomalies</button>
+            <div class="alert" id="anomaly-alert" style="display: none;">
+                <strong>Anomaly Detected!</strong> Please review the system.
+            </div>
+            <div class="success-message" id="no-anomaly-alert" style="display: none;">
+                No anomalies detected. System is running smoothly.
+            </div>
+        </div>
+
+        <!-- Export Historical Data for Auditing -->
+        <div class="analytics-section">
+            <h3>Export Historical Data</h3>
+            <button onclick="exportData('csv')">Export as CSV</button>
+            <button onclick="exportData('pdf')">Export as PDF</button>
+            <button onclick="exportData('excel')">Export as Excel</button>
+            <div class="loading" id="export-loading">Exporting...</div>
+            <div class="success-message" id="export-success" style="display: none;">Export successful!</div>
+            <div class="error-message" id="export-error" style="display: none;">Export failed. Please try again.</div>
+        </div>
+
+        <!-- Generate Reports on Parking Utilization Trends -->
+        <div class="analytics-section">
+            <h3>Parking Utilization Trends</h3>
+            <div class="chart-container">
+                <canvas id="utilizationChart"></canvas>
+            </div>
+            <button onclick="generateTrendReport()">Generate Trend Report</button>
+            <div class="success-message" id="trend-report-output" style="display: none;">
+                Trend report generated successfully. Check your downloads folder.
+            </div>
+        </div>
+
+
+    <script>
+        // Sample data for performance monitoring
+        const performanceData = {
+            labels: ["00:00", "01:00", "02:00", "03:00", "04:00", "05:00"],
+            datasets: [{
+                label: "System Performance",
+                data: [80, 85, 90, 88, 92, 95],
+                borderColor: "#00d4ff",
+                backgroundColor: "rgba(0, 212, 255, 0.1)",
+                fill: true,
+            }]
+        };
+
+        // Sample data for parking utilization trends
+        const utilizationData = {
+            labels: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+            datasets: [{
+                label: "Parking Utilization",
+                data: [75, 75, 80, 85, 90, 145, 170],
+                borderColor: "#ff4d4d",
+                backgroundColor: "rgba(255, 77, 77, 0.1)",
+                fill: true,
+            }]
+        };
+
+        // Initialize performance chart
+        const performanceCtx = document.getElementById("performanceChart").getContext("2d");
+        const performanceChart = new Chart(performanceCtx, {
+            type: "line",
+            data: performanceData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Time",
+                            color: "#00d4ff",
+                        },
+                        ticks: {
+                            color: "#ffffff",
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: "Performance (%)",
+                            color: "#00d4ff",
+                        },
+                        ticks: {
+                            color: "#ffffff",
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#ffffff",
+                        }
+                    }
+                }
+            }
+        });
+
+        // Initialize utilization chart
+        const utilizationCtx = document.getElementById("utilizationChart").getContext("2d");
+        const utilizationChart = new Chart(utilizationCtx, {
+            type: "line",
+            data: utilizationData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: "Day",
+                            color: "#00d4ff",
+                        },
+                        ticks: {
+                            color: "#ffffff",
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: "Utilization (%)",
+                            color: "#00d4ff",
+                        },
+                        ticks: {
+                            color: "#ffffff",
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: "#ffffff",
+                        }
+                    }
+                }
+            }
+        });
+
+        // Function to check for anomalies
+        function checkForAnomalies() {
+            const anomalyDetected = performanceData.datasets[0].data.some(value => value < 80);
+            if (anomalyDetected) {
+                document.getElementById("anomaly-alert").style.display = "block";
+                document.getElementById("no-anomaly-alert").style.display = "none";
+            } else {
+                document.getElementById("anomaly-alert").style.display = "none";
+                document.getElementById("no-anomaly-alert").style.display = "block";
+            }
+        }
+
+        // Function to export data
+        function exportData(format) {
+            const exportLoading = document.getElementById("export-loading");
+            const exportSuccess = document.getElementById("export-success");
+            const exportError = document.getElementById("export-error");
+
+            exportLoading.style.display = "block";
+            exportSuccess.style.display = "none";
+            exportError.style.display = "none";
+
+            setTimeout(() => {
+                exportLoading.style.display = "none";
+                exportSuccess.style.display = "block";
+                // Simulate export logic
+                switch (format) {
+                    case "csv":
+                        exportToCSV();
+                        break;
+                    case "pdf":
+                        exportToPDF();
+                        break;
+                    case "excel":
+                        exportToExcel();
+                        break;
+                    default:
+                        exportError.style.display = "block";
+                }
+            }, 2000);
+        }
+
+        // Function to export data as CSV
+        function exportToCSV() {
+            const csvContent = "data:text/csv;charset=utf-8," + performanceData.labels.join(",") + "\n" + performanceData.datasets[0].data.join(",");
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "performance_data.csv");
+            document.body.appendChild(link);
+            link.click();
+        }
+
+        // Function to export data as PDF
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Performance Data", 10, 10);
+            doc.text(performanceData.labels.join(", "), 10, 20);
+            doc.text(performanceData.datasets[0].data.join(", "), 10, 30);
+            doc.save("performance_data.pdf");
+        }
+
+        // Function to export data as Excel
+        function exportToExcel() {
+            const ws = XLSX.utils.aoa_to_sheet([performanceData.labels, performanceData.datasets[0].data]);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Performance Data");
+            XLSX.writeFile(wb, "performance_data.xlsx");
+        }
+
+        // Function to generate trend report
+        function generateTrendReport() {
+            document.getElementById("trend-report-output").style.display = "block";
+            setTimeout(() => {
+                document.getElementById("trend-report-output").style.display = "none";
+            }, 3000);
+        }
+
+        // Function to refresh slot status
+        function refreshSlotStatus() {
+            const slotStatus = [
+                { id: 1, status: "Occupied" },
+                { id: 2, status: "Available" },
+                { id: 3, status: "Occupied" },
+            ];
+            const slotStatusHtml = slotStatus.map(slot => `
+                <p>Slot ${slot.id}: ${slot.status}</p>
+            `).join("");
+            document.getElementById("slot-status").innerHTML = slotStatusHtml;
+        }
+
+        // Initial load
+        refreshSlotStatus();
+    </script>
+</body>
+</html>
