@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <div class="container mt-5">
+    <h1 class="text-center mb-4">Admin Dashboard</h1>
+
+    <!-- User Management Section -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2>User Management</h2>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTable">
+            <!-- Sample User Data -->
+            <tr>
+              <td>1</td>
+              <td>JohnDoe</td>
+              <td>john.doe@example.com</td>
+              <td>Admin</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('1')">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>JaneSmith</td>
+              <td>jane.smith@example.com</td>
+              <td>User</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('2')">Delete</button>
+              </td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>AliceJohnson</td>
+              <td>alice.johnson@example.com</td>
+              <td>User</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('3')">Delete</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Login History Section -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2>Login History</h2>
+      </div>
+      <div class="card-body">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Login Time</th>
+              <th>IP Address</th>
+            </tr>
+          </thead>
+          <tbody id="loginHistory">
+            <!-- Sample Login History Data -->
+            <tr>
+              <td>JohnDoe</td>
+              <td>2023-10-01 10:15:30</td>
+              <td>192.168.1.1</td>
+            </tr>
+            <tr>
+              <td>JaneSmith</td>
+              <td>2023-10-02 14:20:45</td>
+              <td>192.168.1.2</td>
+            </tr>
+            <tr>
+              <td>AliceJohnson</td>
+              <td>2023-10-03 09:05:10</td>
+              <td>192.168.1.3</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Two-Factor Authentication Section -->
+    <div class="card mb-4">
+      <div class="card-header">
+        <h2>Two-Factor Authentication</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="enable2FA">
+          <label class="form-check-label" for="enable2FA">Enable 2FA</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JavaScript -->
+  <script>
+    // Fetch and display user data (mocked data)
+    function fetchUsers() {
+      const userTable = document.getElementById('userTable');
+      userTable.innerHTML = `
+        <tr>
+          <td>1</td>
+          <td>JohnDoe</td>
+          <td>john.doe@example.com</td>
+          <td>Admin</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('1')">Delete</button>
+          </td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>JaneSmith</td>
+          <td>jane.smith@example.com</td>
+          <td>User</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('2')">Delete</button>
+          </td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>AliceJohnson</td>
+          <td>alice.johnson@example.com</td>
+          <td>User</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('3')">Delete</button>
+          </td>
+        </tr>
+      `;
+    }
+
+    // Fetch and display login history (mocked data)
+    function fetchLoginHistory() {
+      const loginHistory = document.getElementById('loginHistory');
+      loginHistory.innerHTML = `
+        <tr>
+          <td>JohnDoe</td>
+          <td>2023-10-01 10:15:30</td>
+          <td>192.168.1.1</td>
+        </tr>
+        <tr>
+          <td>JaneSmith</td>
+          <td>2023-10-02 14:20:45</td>
+          <td>192.168.1.2</td>
+        </tr>
+        <tr>
+          <td>AliceJohnson</td>
+          <td>2023-10-03 09:05:10</td>
+          <td>192.168.1.3</td>
+        </tr>
+      `;
+    }
+
+    // Delete a user (mocked function)
+    function deleteUser(userId) {
+      alert(User with ID ${userId} deleted.);
+      fetchUsers(); // Refresh the user list
+    }
+
+    // Enable/disable 2FA (mocked function)
+    document.getElementById('enable2FA').addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      alert(2FA ${enabled ? 'enabled' : 'disabled'});
+    });
+
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchUsers();
+      fetchLoginHistory();
+    });
+  </script>
+</body>
+</html>
