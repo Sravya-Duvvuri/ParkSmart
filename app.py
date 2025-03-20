@@ -2,6 +2,7 @@ import flask
 from flask import Flask, request, redirect, url_for, session, render_template, jsonify
 import mysql.connector
 from mysql.connector import Error
+import datetime
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
@@ -74,6 +75,83 @@ def create_db_and_table():
         );
         """
         cursor.execute(create_wallets_table)
+
+        # Create Admins Table
+        create_admins_table = """
+        CREATE TABLE IF NOT EXISTS tbl_admins (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(100) UNIQUE,
+            password VARCHAR(255)
+        );
+        """
+        cursor.execute(create_admins_table)
+
+        create_transactions_table = """
+        CREATE TABLE IF NOT EXISTS tbl_transactions (
+            transaction_id INT AUTO_INCREMENT PRIMARY KEY,
+            user_email VARCHAR(100),
+            start_time DATETIME,
+            end_time DATETIME,
+            transaction_mode VARCHAR(50),
+            amount DECIMAL(10,2),
+            status VARCHAR(50),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_email) REFERENCES tbl_users(email) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_transactions_table)
+
+        # Create UPI Transactions Table
+        create_upi_transactions = """
+        CREATE TABLE IF NOT EXISTS tbl_upi_transactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transaction_id INT,
+            upi_id VARCHAR(100),
+            promo_code VARCHAR(20),
+            FOREIGN KEY (transaction_id) REFERENCES tbl_transactions(transaction_id) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_upi_transactions)
+
+        # Create Wallet Transactions Table
+        create_wallet_transactions = """
+        CREATE TABLE IF NOT EXISTS tbl_wallet_transactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transaction_id INT,
+            payment_method VARCHAR(50),
+            promo_code VARCHAR(20),
+            FOREIGN KEY (transaction_id) REFERENCES tbl_transactions(transaction_id) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_wallet_transactions)
+
+        # Create Credit Transactions Table
+        create_credit_transactions = """
+        CREATE TABLE IF NOT EXISTS tbl_credit_transactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transaction_id INT,
+            card_number VARCHAR(20),
+            card_holder VARCHAR(100),
+            expiry_date VARCHAR(10),
+            promo_code VARCHAR(20),
+            FOREIGN KEY (transaction_id) REFERENCES tbl_transactions(transaction_id) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_credit_transactions)
+
+        # Create Debit Transactions Table
+        create_debit_transactions = """
+        CREATE TABLE IF NOT EXISTS tbl_debit_transactions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transaction_id INT,
+            card_number VARCHAR(20),
+            card_holder VARCHAR(100),
+            expiry_date VARCHAR(10),
+            promo_code VARCHAR(20),
+            FOREIGN KEY (transaction_id) REFERENCES tbl_transactions(transaction_id) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_debit_transactions)
 
         conn.commit()
         cursor.close()
@@ -150,6 +228,19 @@ def login():
             return "Database connection failed!"
         try:
             cursor = conn.cursor(dictionary=True)
+            
+            # First, check if the credentials match an admin record.
+            select_admin_query = "SELECT * FROM tbl_admins WHERE email = %s AND password = %s"
+            cursor.execute(select_admin_query, (email, password))
+            admin = cursor.fetchone()
+            if admin:
+                session["admin_id"] = admin["id"]
+                session["email"] = admin["email"]
+                cursor.close()
+                conn.close()
+                return redirect(url_for("admin_home"))
+            
+            # Otherwise, check if they match a regular user.
             select_query = "SELECT * FROM tbl_users WHERE email = %s AND password = %s"
             cursor.execute(select_query, (email, password))
             user = cursor.fetchone()
@@ -201,10 +292,6 @@ def payment():
 def upi():
     return render_template("upi.html")
 
-@app.route("/upipay")
-def upipay():
-    return render_template("UPIpay.html")
-
 @app.route("/wallet")
 def wallet():
     return render_template("wallet.html")
@@ -213,8 +300,6 @@ def wallet():
 def navigation():
     return render_template("navigation.html")
 
-# Note: If you intended to have a detection page, add a route for it.
-# For example, to fix the broken link in page1.html, you can add:
 @app.route("/detection")
 def detection():
     return render_template("detection.html")
@@ -316,20 +401,268 @@ def process_wallet_payment():
             conn.close()
             return jsonify({"success": False, "error": "Insufficient wallet balance"}), 400
 
+        # Update wallet balance
         cursor.execute("UPDATE tbl_wallets SET balance = balance - %s WHERE user_email = %s", (final_amount, email))
         conn.commit()
 
+        # Record payment in payments table
         cursor.execute(
             "INSERT INTO payments (email, amount, payment_method, promo_code, final_amount) VALUES (%s, %s, %s, %s, %s)",
             (email, final_amount, payment_method, promo_code, final_amount)
         )
         conn.commit()
 
+        # Insert a record into the main transactions table
+        start_time = data.get("start_time")  # Expect these to be passed from the client
+        end_time = data.get("end_time")
+        transaction_mode = "Wallet"
+        status = "Successful"
+        insert_transaction = """
+            INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
+        conn.commit()
+        transaction_id = cursor.lastrowid  # Get the ID of the newly inserted transaction
+
+        # Insert record into wallet_transactions table
+        insert_wallet_transaction = """
+            INSERT INTO tbl_wallet_transactions (transaction_id, payment_method, promo_code)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(insert_wallet_transaction, (transaction_id, payment_method, promo_code))
+        conn.commit()
+
+        # Return updated wallet balance
         cursor.execute("SELECT balance FROM tbl_wallets WHERE user_email = %s", (email,))
         updated_balance = float(cursor.fetchone()[0])
         cursor.close()
         conn.close()
         return jsonify({"success": True, "remaining_balance": updated_balance})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/process_debit_payment", methods=["POST"])
+def process_debit_payment():
+    if "email" not in session:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+    data = request.get_json()
+    try:
+        final_amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid amount provided"}), 400
+
+    card_number = data.get("card_number")
+    card_holder = data.get("card_holder")
+    expiry_date = data.get("expiry_date")
+    promo_code = data.get("promo_code")
+    start_time = data.get("start_time")  # passed from the client
+    end_time = data.get("end_time")      # passed from the client
+    email = session["email"]
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        # Insert into main transactions table
+        transaction_mode = "Debit Card"
+        status = "Successful"
+        insert_transaction = """
+            INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
+        conn.commit()
+        transaction_id = cursor.lastrowid  # Get the newly inserted transaction's ID
+
+        # Insert into debit transactions table
+        insert_debit_transaction = """
+            INSERT INTO tbl_debit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_debit_transaction, (transaction_id, card_number, card_holder, expiry_date, promo_code))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/process_credit_payment", methods=["POST"])
+def process_credit_payment():
+    if "email" not in session:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+    data = request.get_json()
+    try:
+        final_amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid amount provided"}), 400
+
+    card_number = data.get("card_number")
+    card_holder = data.get("card_holder")
+    expiry_date = data.get("expiry_date")
+    promo_code = data.get("promo_code")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    email = session["email"]
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        transaction_mode = "Credit Card"
+        status = "Successful"
+        # Insert record into main transactions table
+        insert_transaction = """
+            INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
+        conn.commit()
+        transaction_id = cursor.lastrowid  # Get the new transaction ID
+
+        # Insert record into credit transactions table
+        insert_credit = """
+            INSERT INTO tbl_credit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_credit, (transaction_id, card_number, card_holder, expiry_date, promo_code))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/process_upi_payment", methods=["POST"])
+def process_upi_payment():
+    if "email" not in session:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+    data = request.get_json()
+    try:
+        final_amount = float(data.get("amount"))
+    except (TypeError, ValueError):
+        return jsonify({"success": False, "error": "Invalid amount provided"}), 400
+
+    upi_id = data.get("upi_id")
+    promo_code = data.get("promo_code")
+    start_time = data.get("start_time")
+    end_time = data.get("end_time")
+    email = session["email"]
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        transaction_mode = "UPI"
+        status = "Successful"
+        # Insert into main transactions table
+        insert_transaction = """
+            INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
+        conn.commit()
+        transaction_id = cursor.lastrowid
+
+        # Insert into UPI transactions table
+        insert_upi = """
+            INSERT INTO tbl_upi_transactions (transaction_id, upi_id, promo_code)
+            VALUES (%s, %s, %s)
+        """
+        cursor.execute(insert_upi, (transaction_id, upi_id, promo_code))
+        conn.commit()
+
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# -------------------------
+# Admin Routes
+# -------------------------
+
+@app.route("/admin_home")
+def admin_home():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_home-page.html")
+
+@app.route("/admin_tracking")
+def admin_tracking():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_tracking.html")
+
+@app.route("/admin_datainsights")
+def admin_datainsights():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_datainsights.html")
+
+@app.route("/admin_dataexport")
+def admin_dataexport():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_dataexport.html")
+
+@app.route("/admin_dashboard")
+def admin_dashboard():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_dashboard.html")
+
+@app.route("/admin_navigation")
+def admin_navigation():
+    if "admin_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("admin_navigation.html")
+
+import datetime  # Add this import at the top if not already present
+
+@app.route("/get_transactions", methods=["GET"])
+def get_transactions():
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Order by start_time, use created_at as fallback if start_time is null
+        query = """
+            SELECT transaction_id, user_email, 
+                   COALESCE(start_time, created_at) AS start_time, 
+                   end_time, transaction_mode, amount, status, created_at
+            FROM tbl_transactions
+            ORDER BY start_time DESC
+        """
+        cursor.execute(query)
+        transactions = cursor.fetchall()
+        
+        # Convert datetime objects to ISO strings
+        for tx in transactions:
+            # Fallback: if start_time is null, use created_at
+            if not tx.get('start_time'):
+                tx['start_time'] = tx['created_at']
+            if isinstance(tx.get('start_time'), datetime.datetime):
+                tx['start_time'] = tx['start_time'].isoformat()
+            if tx.get('end_time') and isinstance(tx.get('end_time'), datetime.datetime):
+                tx['end_time'] = tx['end_time'].isoformat()
+            if isinstance(tx.get('created_at'), datetime.datetime):
+                tx['created_at'] = tx['created_at'].isoformat()
+                
+        print("Fetched transactions:", transactions)  # Debug logging
+        cursor.close()
+        conn.close()
+        return jsonify(transactions)
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
