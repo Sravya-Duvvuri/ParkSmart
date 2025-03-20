@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Payment Tracking & Fraud Detection</title> <!-- Updated Title -->
+    <title>Admin Dashboard - Payment Tracking & Fraud Detection</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Include Chart.js -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
@@ -129,6 +130,13 @@
             text-align: center;
             cursor: pointer; /* Make it clickable */
         }
+
+        .chart-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -182,6 +190,11 @@
             <p>Transactions Today: <span id="transactions-today">0</span></p>
             <p>Average Transaction Value: Rs. <span id="average-transaction">0</span></p>
         </div>
+
+        <!-- Revenue Trends Chart -->
+        <div class="chart-container">
+            <canvas id="revenueChart"></canvas>
+        </div>
     </div>
 
     <script>
@@ -228,6 +241,7 @@
             populateTable(filteredData);
             checkForFraud(filteredData);
             updateAnalytics(filteredData);
+            updateRevenueChart(filteredData);
         }
 
         // Function to check for fraudulent transactions
@@ -253,9 +267,70 @@
             document.getElementById("average-transaction").textContent = averageTransaction.toFixed(2);
         }
 
+        // Function to update the revenue trends chart
+        function updateRevenueChart(data) {
+            let dates = [...new Set(data.map(transaction => transaction.date))].sort(); // Unique and sorted dates
+            let revenueByDate = dates.map(date => {
+                return data.filter(transaction => transaction.date === date && transaction.status === "Success")
+                          .reduce((sum, transaction) => sum + transaction.amount, 0);
+            });
+
+            // Update the chart
+            let ctx = document.getElementById("revenueChart").getContext("2d");
+            if (window.revenueChart) {
+                window.revenueChart.destroy(); // Destroy existing chart
+            }
+            window.revenueChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: "Revenue (Rs.)",
+                        data: revenueByDate,
+                        borderColor: "#00d4ff",
+                        backgroundColor: "rgba(0, 212, 255, 0.1)",
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "Date",
+                                color: "#00d4ff",
+                            },
+                            ticks: {
+                                color: "#ffffff",
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "Revenue (Rs.)",
+                                color: "#00d4ff",
+                            },
+                            ticks: {
+                                color: "#ffffff",
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: "#ffffff",
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         // Initial load
         updateAnalytics(transactions);
         checkForFraud(transactions);
+        updateRevenueChart(transactions);
     </script>
 </body>
 </html>
