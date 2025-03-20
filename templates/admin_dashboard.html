@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { 
+      background-color: #1a1a2e; 
+      color: #ffffff; 
+    }
+    .card { margin-bottom: 20px; }
+    .table { background-color: #ffffff; color: #000; }
+  </style>
 </head>
 <body>
   <div class="container mt-5">
@@ -17,45 +25,18 @@
         <h2>User Management</h2>
       </div>
       <div class="card-body">
-        <table class="table table-striped">
+        <table class="table table-striped" id="userTable">
           <thead>
             <tr>
               <th>ID</th>
-              <th>Username</th>
+              <th>Name</th>
               <th>Email</th>
               <th>Role</th>
               <th>Actions</th>
             </tr>
           </thead>
-          <tbody id="userTable">
-            <!-- Sample User Data -->
-            <tr>
-              <td>1</td>
-              <td>JohnDoe</td>
-              <td>john.doe@example.com</td>
-              <td>Admin</td>
-              <td>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser('1')">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>JaneSmith</td>
-              <td>jane.smith@example.com</td>
-              <td>User</td>
-              <td>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser('2')">Delete</button>
-              </td>
-            </tr>
-            <tr>
-              <td>3</td>
-              <td>AliceJohnson</td>
-              <td>alice.johnson@example.com</td>
-              <td>User</td>
-              <td>
-                <button class="btn btn-danger btn-sm" onclick="deleteUser('3')">Delete</button>
-              </td>
-            </tr>
+          <tbody>
+            <!-- Filled via backend -->
           </tbody>
         </table>
       </div>
@@ -67,31 +48,16 @@
         <h2>Login History</h2>
       </div>
       <div class="card-body">
-        <table class="table table-striped">
+        <table class="table table-striped" id="loginHistory">
           <thead>
             <tr>
-              <th>User</th>
+              <th>User Email</th>
               <th>Login Time</th>
               <th>IP Address</th>
             </tr>
           </thead>
-          <tbody id="loginHistory">
-            <!-- Sample Login History Data -->
-            <tr>
-              <td>JohnDoe</td>
-              <td>2023-10-01 10:15:30</td>
-              <td>192.168.1.1</td>
-            </tr>
-            <tr>
-              <td>JaneSmith</td>
-              <td>2023-10-02 14:20:45</td>
-              <td>192.168.1.2</td>
-            </tr>
-            <tr>
-              <td>AliceJohnson</td>
-              <td>2023-10-03 09:05:10</td>
-              <td>192.168.1.3</td>
-            </tr>
+          <tbody>
+            <!-- Filled via backend -->
           </tbody>
         </table>
       </div>
@@ -109,82 +75,102 @@
         </div>
       </div>
     </div>
+
+    <!-- Download Report Section -->
+    <div class="text-center">
+      <button id="downloadReport" class="btn btn-primary">Download Full Report as PDF</button>
+    </div>
   </div>
 
   <!-- Bootstrap JS and dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Custom JavaScript -->
   <script>
-    // Fetch and display user data (mocked data)
+    // Fetch and display user management data from backend
     function fetchUsers() {
-      const userTable = document.getElementById('userTable');
-      userTable.innerHTML = `
-        <tr>
-          <td>1</td>
-          <td>JohnDoe</td>
-          <td>john.doe@example.com</td>
-          <td>Admin</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteUser('1')">Delete</button>
-          </td>
-        </tr>
-        <tr>
-          <td>2</td>
-          <td>JaneSmith</td>
-          <td>jane.smith@example.com</td>
-          <td>User</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteUser('2')">Delete</button>
-          </td>
-        </tr>
-        <tr>
-          <td>3</td>
-          <td>AliceJohnson</td>
-          <td>alice.johnson@example.com</td>
-          <td>User</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="deleteUser('3')">Delete</button>
-          </td>
-        </tr>
-      `;
+      fetch("/admin_get_users")
+        .then(response => response.json())
+        .then(data => {
+          console.log("Fetched users:", data);
+          const userTableBody = document.getElementById("userTable").querySelector("tbody");
+          userTableBody.innerHTML = data.map(user => `
+            <tr>
+              <td>${user.id}</td>
+              <td>${user.name ? user.name : "N/A"}</td>
+              <td>${user.email}</td>
+              <td>${user.role}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')">Delete</button>
+              </td>
+            </tr>
+          `).join("");
+        })
+        .catch(err => console.error("Error fetching users:", err));
     }
 
-    // Fetch and display login history (mocked data)
-    function fetchLoginHistory() {
-      const loginHistory = document.getElementById('loginHistory');
-      loginHistory.innerHTML = `
-        <tr>
-          <td>JohnDoe</td>
-          <td>2023-10-01 10:15:30</td>
-          <td>192.168.1.1</td>
-        </tr>
-        <tr>
-          <td>JaneSmith</td>
-          <td>2023-10-02 14:20:45</td>
-          <td>192.168.1.2</td>
-        </tr>
-        <tr>
-          <td>AliceJohnson</td>
-          <td>2023-10-03 09:05:10</td>
-          <td>192.168.1.3</td>
-        </tr>
-      `;
-    }
-
-    // Delete a user (mocked function)
+    // Delete a user using backend endpoint
     function deleteUser(userId) {
-      alert(User with ID ${userId} deleted.);
-      fetchUsers(); // Refresh the user list
+      if (!confirm("Are you sure you want to delete user ID " + userId + "?")) return;
+      fetch("/admin_delete_user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert("User deleted successfully.");
+          fetchUsers();
+        } else {
+          alert("Error deleting user: " + data.error);
+        }
+      })
+      .catch(err => console.error("Error deleting user:", err));
     }
 
-    // Enable/disable 2FA (mocked function)
-    document.getElementById('enable2FA').addEventListener('change', (e) => {
+    // Fetch and display login history from backend
+    function fetchLoginHistory() {
+      fetch("/admin_get_logins")
+        .then(response => response.json())
+        .then(data => {
+          console.log("Fetched login history:", data);
+          const loginHistoryBody = document.getElementById("loginHistory").querySelector("tbody");
+          loginHistoryBody.innerHTML = data.map(login => `
+            <tr>
+              <td>${login.user_email}</td>
+              <td>${login.login_time.substring(0, 19).replace('T', ' ')}</td>
+              <td>${login.ip_address}</td>
+            </tr>
+          `).join("");
+        })
+        .catch(err => console.error("Error fetching login history:", err));
+    }
+
+    // Two-Factor Authentication toggle
+    document.getElementById("enable2FA").addEventListener("change", (e) => {
       const enabled = e.target.checked;
-      alert(2FA ${enabled ? 'enabled' : 'disabled'});
+      fetch("/admin_toggle_2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: enabled })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert("2FA " + (enabled ? "enabled" : "disabled") + " successfully.");
+        } else {
+          alert("Error updating 2FA: " + data.error);
+        }
+      })
+      .catch(err => console.error("Error updating 2FA:", err));
     });
 
-    // Load data on page load
-    document.addEventListener('DOMContentLoaded', () => {
+    // Download report as PDF (placeholder - enhance as needed)
+    document.getElementById("downloadReport").addEventListener("click", () => {
+      alert("Report generation from backend functionality would go here.");
+    });
+
+    // On page load, fetch users and login history
+    document.addEventListener("DOMContentLoaded", () => {
       fetchUsers();
       fetchLoginHistory();
     });

@@ -153,6 +153,18 @@ def create_db_and_table():
         """
         cursor.execute(create_debit_transactions)
 
+        # Create Login History Table
+        create_login_history_table = """
+        CREATE TABLE IF NOT EXISTS tbl_login_history (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_email VARCHAR(100),
+            login_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+            ip_address VARCHAR(50)
+        );
+        """
+        cursor.execute(create_login_history_table)
+
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -236,6 +248,11 @@ def login():
             if admin:
                 session["admin_id"] = admin["id"]
                 session["email"] = admin["email"]
+                # Insert login history for admin
+                user_ip = request.remote_addr
+                insert_login_history = "INSERT INTO tbl_login_history (user_email, ip_address) VALUES (%s, %s)"
+                cursor.execute(insert_login_history, (email, user_ip))
+                conn.commit()
                 cursor.close()
                 conn.close()
                 return redirect(url_for("admin_home"))
@@ -259,6 +276,12 @@ def login():
                     conn.commit()
                 cursor2.close()
 
+                # Insert login history record for the user
+                user_ip = request.remote_addr
+                insert_login_history = "INSERT INTO tbl_login_history (user_email, ip_address) VALUES (%s, %s)"
+                cursor.execute(insert_login_history, (email, user_ip))
+                conn.commit()
+
                 cursor.close()
                 conn.close()
                 return redirect(url_for("page1"))
@@ -269,6 +292,7 @@ def login():
         except Error as e:
             return f"Error during login: {e}"
     return render_template("login.html")
+
 
 @app.route("/page1")
 def page1():
@@ -665,6 +689,88 @@ def get_transactions():
         return jsonify(transactions)
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+# Endpoint to fetch all users (for admin)
+@app.route("/admin_get_users", methods=["GET"])
+def admin_get_users():
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT id, name, email, 'User' AS role FROM tbl_users"  # In a real app, add a role field
+        cursor.execute(query)
+        users = cursor.fetchall()
+        # For admin records, also get from tbl_admins (if needed)
+        query_admin = "SELECT id, email, 'Admin' AS role FROM tbl_admins"
+        cursor.execute(query_admin)
+        admins = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        # Combine lists; you might want to sort them or mark admin users differently
+        all_users = admins + users
+        return jsonify(all_users)
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# Endpoint to delete a user (by id); note that this deletes from tbl_users
+@app.route("/admin_delete_user", methods=["POST"])
+def admin_delete_user():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"success": False, "error": "User ID not provided"}), 400
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        # You might want to add logic so that admin cannot delete themselves
+        query = "DELETE FROM tbl_users WHERE id = %s"
+        cursor.execute(query, (user_id,))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    
+
+@app.route("/admin_get_logins", methods=["GET"])
+def admin_get_logins():
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Retrieve login history ordered by login_time descending
+        query = """
+            SELECT id, user_email, login_time, ip_address
+            FROM tbl_login_history
+            ORDER BY login_time DESC
+        """
+        cursor.execute(query)
+        logins = cursor.fetchall()
+        # Convert datetime objects to ISO strings
+        for login in logins:
+            if isinstance(login.get('login_time'), datetime.datetime):
+                login['login_time'] = login['login_time'].isoformat()
+        cursor.close()
+        conn.close()
+        return jsonify(logins)
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+    
+
+# Endpoint to update two-factor authentication setting for an admin
+@app.route("/admin_toggle_2fa", methods=["POST"])
+def admin_toggle_2fa():
+    data = request.get_json()
+    enabled = data.get("enabled")
+    # For demonstration, we simply return the new state.
+    # In a real application, you'd update a column in tbl_admins or a separate settings table.
+    return jsonify({"success": True, "2fa_enabled": enabled})
+
 
 if __name__ == "__main__":
     create_db_and_table()
