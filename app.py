@@ -3,6 +3,7 @@ from flask import Flask, request, redirect, url_for, session, render_template, j
 import mysql.connector
 from mysql.connector import Error
 import datetime
+import random  # Needed for the init_parking_slots endpoint
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
@@ -86,6 +87,7 @@ def create_db_and_table():
         """
         cursor.execute(create_admins_table)
 
+        # Create Transactions Table
         create_transactions_table = """
         CREATE TABLE IF NOT EXISTS tbl_transactions (
             transaction_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -164,6 +166,30 @@ def create_db_and_table():
         """
         cursor.execute(create_login_history_table)
 
+        # Create Parking Slots Table
+        create_parking_slots_table = """
+        CREATE TABLE IF NOT EXISTS tbl_parking_slots (
+            slot_id INT AUTO_INCREMENT PRIMARY KEY,
+            slot_name VARCHAR(50) UNIQUE,
+            lat DECIMAL(10,6),
+            lng DECIMAL(10,6)
+        );
+        """
+        cursor.execute(create_parking_slots_table)
+
+        # Create Slot Reservations Table
+        create_slot_res_table = """
+        CREATE TABLE IF NOT EXISTS tbl_slot_reservations (
+            reservation_id INT AUTO_INCREMENT PRIMARY KEY,
+            slot_id INT,
+            user_email VARCHAR(100),
+            start_time DATETIME,
+            end_time DATETIME,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (slot_id) REFERENCES tbl_parking_slots(slot_id) ON DELETE CASCADE
+        );
+        """
+        cursor.execute(create_slot_res_table)
 
         conn.commit()
         cursor.close()
@@ -292,7 +318,6 @@ def login():
         except Error as e:
             return f"Error during login: {e}"
     return render_template("login.html")
-
 
 @app.route("/page1")
 def page1():
@@ -489,7 +514,6 @@ def process_debit_payment():
         return jsonify({"success": False, "error": "Database connection failed"}), 500
     try:
         cursor = conn.cursor()
-        # Insert into main transactions table
         transaction_mode = "Debit Card"
         status = "Successful"
         insert_transaction = """
@@ -498,9 +522,8 @@ def process_debit_payment():
         """
         cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
         conn.commit()
-        transaction_id = cursor.lastrowid  # Get the newly inserted transaction's ID
+        transaction_id = cursor.lastrowid
 
-        # Insert into debit transactions table
         insert_debit_transaction = """
             INSERT INTO tbl_debit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
             VALUES (%s, %s, %s, %s, %s)
@@ -513,7 +536,6 @@ def process_debit_payment():
         return jsonify({"success": True})
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 @app.route("/process_credit_payment", methods=["POST"])
 def process_credit_payment():
@@ -540,16 +562,14 @@ def process_credit_payment():
         cursor = conn.cursor()
         transaction_mode = "Credit Card"
         status = "Successful"
-        # Insert record into main transactions table
         insert_transaction = """
             INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
             VALUES (%s, %s, %s, %s, %s, %s)
         """
         cursor.execute(insert_transaction, (email, start_time, end_time, transaction_mode, final_amount, status))
         conn.commit()
-        transaction_id = cursor.lastrowid  # Get the new transaction ID
+        transaction_id = cursor.lastrowid
 
-        # Insert record into credit transactions table
         insert_credit = """
             INSERT INTO tbl_credit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
             VALUES (%s, %s, %s, %s, %s)
@@ -562,7 +582,6 @@ def process_credit_payment():
         return jsonify({"success": True})
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
-
 
 @app.route("/process_upi_payment", methods=["POST"])
 def process_upi_payment():
@@ -587,7 +606,6 @@ def process_upi_payment():
         cursor = conn.cursor()
         transaction_mode = "UPI"
         status = "Successful"
-        # Insert into main transactions table
         insert_transaction = """
             INSERT INTO tbl_transactions (user_email, start_time, end_time, transaction_mode, amount, status)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -596,7 +614,6 @@ def process_upi_payment():
         conn.commit()
         transaction_id = cursor.lastrowid
 
-        # Insert into UPI transactions table
         insert_upi = """
             INSERT INTO tbl_upi_transactions (transaction_id, upi_id, promo_code)
             VALUES (%s, %s, %s)
@@ -604,6 +621,140 @@ def process_upi_payment():
         cursor.execute(insert_upi, (transaction_id, upi_id, promo_code))
         conn.commit()
 
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/init_parking_slots")
+def init_parking_slots():
+    """Seed 10 random slots if none exist."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT COUNT(*) as cnt FROM tbl_parking_slots")
+        row = cursor.fetchone()
+        if row["cnt"] == 0:
+            base_lat, base_lng = 11.0168, 76.9558
+            for i in range(1, 11):
+                lat = base_lat + random.uniform(-0.01, 0.01)
+                lng = base_lng + random.uniform(-0.01, 0.01)
+                slot_name = f"Slot {i}"
+                insert_q = "INSERT INTO tbl_parking_slots (slot_name, lat, lng) VALUES (%s, %s, %s)"
+                cursor.execute(insert_q, (slot_name, lat, lng))
+            conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/get_parking_slots", methods=["GET"])
+def get_parking_slots():
+    """Return all slots from tbl_parking_slots."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify([])
+    try:
+        cursor = conn.cursor(dictionary=True)
+        query = """
+        SELECT slot_id, slot_name, lat, lng
+        FROM tbl_parking_slots
+        ORDER BY slot_id
+        """
+        cursor.execute(query)
+        slots = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify(slots)
+    except Error:
+        return jsonify([])
+
+@app.route("/get_slot_reservations", methods=["GET"])
+def get_slot_reservations():
+    """Return all reservations from tbl_slot_reservations."""
+    conn = get_db_connection()
+    if not conn:
+        return jsonify([])
+    try:
+        cursor = conn.cursor(dictionary=True)
+        query = """
+        SELECT reservation_id, slot_id, user_email, start_time, end_time, created_at
+        FROM tbl_slot_reservations
+        ORDER BY start_time
+        """
+        cursor.execute(query)
+        res = cursor.fetchall()
+        for r in res:
+            if isinstance(r["start_time"], datetime.datetime):
+                r["start_time"] = r["start_time"].isoformat()
+            if isinstance(r["end_time"], datetime.datetime):
+                r["end_time"] = r["end_time"].isoformat()
+            if isinstance(r["created_at"], datetime.datetime):
+                r["created_at"] = r["created_at"].isoformat()
+        cursor.close()
+        conn.close()
+        return jsonify(res)
+    except Error as e:
+        print("Error fetching slot reservations:", e)
+        return jsonify([])
+
+@app.route("/reserve_slot", methods=["POST"])
+def reserve_slot():
+    """Insert a new reservation if no overlap for that slot/time range."""
+    if "email" not in session:
+        return jsonify({"success": False, "error": "User not logged in"}), 401
+    data = request.get_json()
+    slot_id = data.get("slot_id")
+    reserved_from = data.get("reserved_from")  # "YYYY-MM-DD HH:MM:SS"
+    reserved_to = data.get("reserved_to")
+    email = session["email"]
+
+    if not slot_id or not reserved_from or not reserved_to:
+        return jsonify({"success": False, "error": "Missing reservation details"}), 400
+
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "Database connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+
+        # Overlap check for the same slot
+        overlap_q = """
+        SELECT reservation_id FROM tbl_slot_reservations
+        WHERE slot_id = %s
+          AND (start_time < %s AND end_time > %s)
+        """
+        cursor.execute(overlap_q, (slot_id, reserved_to, reserved_from))
+        overlap = cursor.fetchone()
+        if overlap:
+            cursor.close()
+            conn.close()
+            return jsonify({"success": False, "error": "This slot is already reserved for that time range."}), 400
+
+        # If you also want to prevent the user from double-booking themselves:
+        user_overlap_q = """
+        SELECT reservation_id FROM tbl_slot_reservations
+        WHERE user_email = %s
+          AND (start_time < %s AND end_time > %s)
+        """
+        cursor.execute(user_overlap_q, (email, reserved_to, reserved_from))
+        user_overlap = cursor.fetchone()
+        if user_overlap:
+            cursor.close()
+            conn.close()
+            return jsonify({"success": False, "error": "You already have an overlapping reservation."}), 400
+
+        # Insert new reservation
+        insert_q = """
+        INSERT INTO tbl_slot_reservations (slot_id, user_email, start_time, end_time)
+        VALUES (%s, %s, %s, %s)
+        """
+        cursor.execute(insert_q, (slot_id, email, reserved_from, reserved_to))
+        conn.commit()
         cursor.close()
         conn.close()
         return jsonify({"success": True})
@@ -651,8 +802,6 @@ def admin_navigation():
         return redirect(url_for("login"))
     return render_template("admin_navigation.html")
 
-import datetime  # Add this import at the top if not already present
-
 @app.route("/get_transactions", methods=["GET"])
 def get_transactions():
     conn = get_db_connection()
@@ -660,7 +809,6 @@ def get_transactions():
         return jsonify({"success": False, "error": "Database connection failed"}), 500
     try:
         cursor = conn.cursor(dictionary=True)
-        # Order by start_time, use created_at as fallback if start_time is null
         query = """
             SELECT transaction_id, user_email, 
                    COALESCE(start_time, created_at) AS start_time, 
@@ -671,9 +819,7 @@ def get_transactions():
         cursor.execute(query)
         transactions = cursor.fetchall()
         
-        # Convert datetime objects to ISO strings
         for tx in transactions:
-            # Fallback: if start_time is null, use created_at
             if not tx.get('start_time'):
                 tx['start_time'] = tx['created_at']
             if isinstance(tx.get('start_time'), datetime.datetime):
@@ -683,14 +829,13 @@ def get_transactions():
             if isinstance(tx.get('created_at'), datetime.datetime):
                 tx['created_at'] = tx['created_at'].isoformat()
                 
-        print("Fetched transactions:", transactions)  # Debug logging
+        print("Fetched transactions:", transactions)
         cursor.close()
         conn.close()
         return jsonify(transactions)
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-# Endpoint to fetch all users (for admin)
 @app.route("/admin_get_users", methods=["GET"])
 def admin_get_users():
     conn = get_db_connection()
@@ -698,22 +843,19 @@ def admin_get_users():
         return jsonify({"success": False, "error": "DB connection failed"}), 500
     try:
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT id, name, email, 'User' AS role FROM tbl_users"  # In a real app, add a role field
+        query = "SELECT id, name, email, 'User' AS role FROM tbl_users"
         cursor.execute(query)
         users = cursor.fetchall()
-        # For admin records, also get from tbl_admins (if needed)
         query_admin = "SELECT id, email, 'Admin' AS role FROM tbl_admins"
         cursor.execute(query_admin)
         admins = cursor.fetchall()
         cursor.close()
         conn.close()
-        # Combine lists; you might want to sort them or mark admin users differently
         all_users = admins + users
         return jsonify(all_users)
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-# Endpoint to delete a user (by id); note that this deletes from tbl_users
 @app.route("/admin_delete_user", methods=["POST"])
 def admin_delete_user():
     data = request.get_json()
@@ -725,7 +867,6 @@ def admin_delete_user():
         return jsonify({"success": False, "error": "DB connection failed"}), 500
     try:
         cursor = conn.cursor()
-        # You might want to add logic so that admin cannot delete themselves
         query = "DELETE FROM tbl_users WHERE id = %s"
         cursor.execute(query, (user_id,))
         conn.commit()
@@ -743,7 +884,6 @@ def admin_get_logins():
         return jsonify({"success": False, "error": "Database connection failed"}), 500
     try:
         cursor = conn.cursor(dictionary=True)
-        # Retrieve login history ordered by login_time descending
         query = """
             SELECT id, user_email, login_time, ip_address
             FROM tbl_login_history
@@ -751,7 +891,6 @@ def admin_get_logins():
         """
         cursor.execute(query)
         logins = cursor.fetchall()
-        # Convert datetime objects to ISO strings
         for login in logins:
             if isinstance(login.get('login_time'), datetime.datetime):
                 login['login_time'] = login['login_time'].isoformat()
@@ -762,15 +901,11 @@ def admin_get_logins():
         return jsonify({"success": False, "error": str(e)}), 500
     
 
-# Endpoint to update two-factor authentication setting for an admin
 @app.route("/admin_toggle_2fa", methods=["POST"])
 def admin_toggle_2fa():
     data = request.get_json()
     enabled = data.get("enabled")
-    # For demonstration, we simply return the new state.
-    # In a real application, you'd update a column in tbl_admins or a separate settings table.
     return jsonify({"success": True, "2fa_enabled": enabled})
-
 
 if __name__ == "__main__":
     create_db_and_table()
