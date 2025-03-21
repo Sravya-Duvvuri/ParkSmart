@@ -1,6 +1,21 @@
 show databases;
 use my_app_db;
 show tables;
+select * from tbl_pricing;
+
+CREATE TABLE IF NOT EXISTS tbl_pricing (
+    pricing_id INT AUTO_INCREMENT PRIMARY KEY,
+    day_of_week VARCHAR(20),        -- e.g., 'Weekday', 'Weekend'
+    time_window VARCHAR(20),        -- e.g., 'Peak', 'Off-Peak'
+    rate_per_hour DECIMAL(10,2)
+);
+
+INSERT INTO tbl_pricing (day_of_week, time_window, rate_per_hour)
+VALUES
+('Weekday', 'Off-Peak', 50.00),
+('Weekday', 'Peak', 65.00),
+('Weekend', 'All-Day', 75.00);
+
 select * from tbl_admins;
 select * from tbl_users;
 select * from payments;

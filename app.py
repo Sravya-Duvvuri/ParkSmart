@@ -191,6 +191,18 @@ def create_db_and_table():
         """
         cursor.execute(create_slot_res_table)
 
+        def create_pricing_table(cursor):
+            # This table stores pricing rates based on day and time window.
+            create_pricing_table = """
+            CREATE TABLE IF NOT EXISTS tbl_pricing (
+                pricing_id INT AUTO_INCREMENT PRIMARY KEY,
+                day_of_week VARCHAR(20), -- e.g., 'Weekday', 'Weekend'
+                time_window VARCHAR(20), -- e.g., 'Peak', 'Off-Peak'
+                rate_per_hour DECIMAL(10,2)
+            );
+            """
+            cursor.execute(create_pricing_table)
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -760,6 +772,113 @@ def reserve_slot():
         return jsonify({"success": True})
     except Error as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+def get_pricing():
+    """
+    Returns the entire pricing table.
+    Example JSON:
+    {
+      "success": true,
+      "rates": [
+        {
+          "pricing_id": 1,
+          "day_of_week": "Weekday",
+          "time_window": "Off-Peak",
+          "rate_per_hour": 50.00
+        },
+        ...
+      ]
+    }
+    """
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM tbl_pricing")
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "rates": rows})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route("/update_pricing", methods=["POST"])
+def update_pricing():
+    """
+    Allows admin to update the rate_per_hour for a given pricing_id.
+    Expects JSON: { "pricing_id": 1, "rate_per_hour": 65.00 }
+    """
+    data = request.get_json()
+    pricing_id = data.get("pricing_id")
+    rate = data.get("rate_per_hour")
+    if pricing_id is None or rate is None:
+        return jsonify({"success": False, "error": "Missing pricing_id or rate"}), 400
+
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor()
+        update_sql = "UPDATE tbl_pricing SET rate_per_hour = %s WHERE pricing_id = %s"
+        cursor.execute(update_sql, (rate, pricing_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# -------------------------------
+# Booking Analysis Endpoint
+# -------------------------------
+@app.route("/get_booking_analysis", methods=["GET"])
+def get_booking_analysis():
+    """
+    Example: returns aggregated data by hour for total bookings and average price.
+    In real usage, you'd replace the price logic with your actual pricing calculations or references to transactions.
+    """
+    conn = get_db_connection()
+    if conn is None:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Example logic: 
+        # - we assume tbl_slot_reservations is used for bookings
+        # - we do a rough guess for price by hour, day, etc.
+        query = """
+        SELECT 
+          HOUR(start_time) AS booking_hour,
+          COUNT(*) AS total_bookings,
+          -- Example: approximate average cost for demonstration
+          AVG(TIMESTAMPDIFF(MINUTE, start_time, end_time)/60 * 50) AS avg_price
+        FROM tbl_slot_reservations
+        GROUP BY booking_hour
+        ORDER BY booking_hour;
+        """
+        cursor.execute(query)
+        analysis = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "analysis": analysis})
+    except Error as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# -------------------------------
+# Download Report Endpoint
+# -------------------------------
+@app.route("/download_report", methods=["GET"])
+def download_report():
+    """
+    For demonstration: returns a success message with timeframe.
+    If you want to serve a real PDF file, you'd generate it and return the file content here.
+    """
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    if not start_date or not end_date:
+        return jsonify({"success": False, "error": "Missing start_date or end_date"}), 400
+    # In real usage, generate or query data in [start_date, end_date].
+    return jsonify({"success": True, "message": f'Report from {start_date} to {end_date} generated successfully.'})
 
 
 # -------------------------
