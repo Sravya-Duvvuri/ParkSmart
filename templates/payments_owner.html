@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earnings Dashboard</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap">
+    <style>
+        /* Styling (Same as your previous code) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Poppins', sans-serif; background: url('picccc.jpg') no-repeat center center/cover; min-height: 100vh; color: #333; }
+        header { background: rgba(0, 0, 0, 0.85); padding: 1.5rem; position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(5px); display: flex; justify-content: space-between; align-items: center; }
+        header h1 { font-size: 2rem; color: #fff; }
+        nav ul { list-style: none; display: flex; gap: 2rem; }
+        nav ul li a { color: #fff; text-decoration: none; font-weight: 600; padding: 0.5rem 1rem; border-radius: 5px; transition: all 0.3s ease; }
+        nav ul li a:hover { color: #1e3a8a; background: rgba(255, 255, 255, 0.1); transform: translateY(-2px); }
+        main { padding: 4rem 2rem; }
+        section { background: rgba(255, 255, 255, 0.15); padding: 3rem; width: 90%; max-width: 1000px; margin: 2rem auto; border-radius: 15px; backdrop-filter: blur(5px); }
+        h2 { font-size: 2.5rem; margin-bottom: 1rem; color: #1e3a8a; text-align: center; }
+        table { width: 100%; border-collapse: collapse; background: rgba(255, 255, 255, 0.9); border-radius: 10px; overflow: hidden; margin-top: 1rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; color: #333; }
+        th { background-color: #1e3a8a; color: #fff; font-weight: 600; }
+        tr:nth-child(even) { background-color: rgba(240, 240, 240, 0.8); }
+        .btn { padding: 1rem 2rem; background: #1e3a8a; color: #fff; border: none; border-radius: 50px; font-weight: 600; font-size: 1.1rem; cursor: pointer; margin: 1rem 0; }
+        .btn:hover { background: #172554; transform: translateY(-5px) scale(1.05); }
+        input { padding: 0.8rem; border-radius: 8px; border: 2px solid #1e3a8a; background: rgba(255, 255, 255, 0.9); font-size: 1rem; width: 300px; margin: 1rem 0; }
+        footer { background: rgba(0, 0, 0, 0.9); padding: 1.5rem; text-align: center; font-size: 0.9rem; position: relative; bottom: 0; width: 100%; color: #fff; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚗 Earnings Dashboard 🚀</h1>
+        <nav>
+            <ul>
+                <li><a href="index_owner.html">Home</a></li>
+                <li><a href="register_owner.html">Register</a></li>
+                <li><a href="contact_owner.html">Contact</a></li>
+                <li><a href="statistics_owner.html">Statistics</a></li>
+                <li><a href="payments_owner.html">Payments</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Earnings Summary</h2>
+            <div class="summary">
+                <p>Total Amount Collected: <strong>$110.00</strong></p>
+                <p>Pending Payments: $70.50</p>
+            </div>
+
+            <h2>Slot Assignments</h2>
+            <table id="earningsTable">
+                <tr>
+                    <th>Slot Number</th>
+                    <th>Renter Name</th>
+                    <th>Date/Time Booked</th>
+                    <th>Duration</th>
+                    <th>Amount Paid</th>
+                    <th>Status</th>
+                </tr>
+                <tr>
+                    <td>Slot 1</td>
+                    <td>Jane Smith</td>
+                    <td>March 27, 2025, 10:00 AM - 12:00 PM</td>
+                    <td>2 hours</td>
+                    <td>$50.00</td>
+                    <td>Completed</td>
+                </tr>
+                <tr>
+                    <td>Slot 2</td>
+                    <td>Mark Lee</td>
+                    <td>March 27, 2025, 9:00 AM - 11:00 AM</td>
+                    <td>2 hours</td>
+                    <td>$60.00</td>
+                    <td>Completed</td>
+                </tr>
+                <tr>
+                    <td>Slot 3</td>
+                    <td>Alex Brown</td>
+                    <td>March 27, 2025, 1:00 PM - 3:00 PM</td>
+                    <td>2 hours</td>
+                    <td>$70.50</td>
+                    <td>Ongoing</td>
+                </tr>
+            </table>
+
+            <h2>Additional Options</h2>
+            <button class="btn" onclick="downloadReport()">📥 Download Report</button>
+            <input type="text" placeholder="Search by name, date, or slot">
+
+            <p>Total Earnings: <strong>$110.00</strong></p>
+            <button class="btn">💸 Withdraw Funds</button>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2025 Parking Lot Management. All rights reserved.</p>
+    </footer>
+
+    <script>
+        function downloadReport() {
+            let table = document.getElementById("earningsTable");
+            let rows = table.rows;
+            let csvContent = "data:text/csv;charset=utf-8,";
+
+            for (let i = 0; i < rows.length; i++) {
+                let row = [];
+                for (let j = 0; j < rows[i].cells.length; j++) {
+                    row.push(rows[i].cells[j].innerText);
+                }
+                csvContent += row.join(",") + "\n";
+            }
+
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "earnings_report.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
