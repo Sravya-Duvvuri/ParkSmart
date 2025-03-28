@@ -32,11 +32,11 @@
         <h1>🚗 Earnings Dashboard 🚀</h1>
         <nav>
             <ul>
-                <li><a href="index_owner.html">Home</a></li>
-                <li><a href="register_owner.html">Register</a></li>
-                <li><a href="contact_owner.html">Contact</a></li>
-                <li><a href="statistics_owner.html">Statistics</a></li>
-                <li><a href="payments_owner.html">Payments</a></li>
+                <li><a href="{{ url_for('index_owner') }}">Home</a></li>
+                <li><a href="{{ url_for('payments_owner') }}">Payments</a></li>
+                <li><a href="{{ url_for('render_register_owner') }}">Register</a></li>
+                <li><a href="{{ url_for('render_contact_owner') }}">Contact</a></li>
+                <li><a href="{{ url_for('render_statistics_owner') }}">Stats</a></li>
             </ul>
         </nav>
     </header>
@@ -45,51 +45,39 @@
         <section>
             <h2>Earnings Summary</h2>
             <div class="summary">
+                <!-- Summary values can be updated dynamically if desired -->
                 <p>Total Amount Collected: <strong>$110.00</strong></p>
                 <p>Pending Payments: $70.50</p>
             </div>
 
             <h2>Slot Assignments</h2>
             <table id="earningsTable">
-                <tr>
-                    <th>Slot Number</th>
-                    <th>Renter Name</th>
-                    <th>Date/Time Booked</th>
-                    <th>Duration</th>
-                    <th>Amount Paid</th>
-                    <th>Status</th>
-                </tr>
-                <tr>
-                    <td>Slot 1</td>
-                    <td>Jane Smith</td>
-                    <td>March 27, 2025, 10:00 AM - 12:00 PM</td>
-                    <td>2 hours</td>
-                    <td>$50.00</td>
-                    <td>Completed</td>
-                </tr>
-                <tr>
-                    <td>Slot 2</td>
-                    <td>Mark Lee</td>
-                    <td>March 27, 2025, 9:00 AM - 11:00 AM</td>
-                    <td>2 hours</td>
-                    <td>$60.00</td>
-                    <td>Completed</td>
-                </tr>
-                <tr>
-                    <td>Slot 3</td>
-                    <td>Alex Brown</td>
-                    <td>March 27, 2025, 1:00 PM - 3:00 PM</td>
-                    <td>2 hours</td>
-                    <td>$70.50</td>
-                    <td>Ongoing</td>
-                </tr>
+                <!-- This table structure is left for slot assignment details if needed -->
             </table>
 
-            <h2>Additional Options</h2>
-            <button class="btn" onclick="downloadReport()">📥 Download Report</button>
-            <input type="text" placeholder="Search by name, date, or slot">
-
-            <p>Total Earnings: <strong>$110.00</strong></p>
+            <h2>Owner Earnings (60% Share)</h2>
+            <div>
+                <label for="startDate">Start Date:</label>
+                <input type="date" id="startDate">
+                <label for="endDate">End Date (optional):</label>
+                <input type="date" id="endDate">
+                <button class="btn" id="fetchBtn">Fetch Earnings</button>
+                <button class="btn" onclick="downloadReport()">📥 Download Report</button>
+            </div>
+            <table id="ownerEarningsTable">
+                <thead>
+                    <tr>
+                        <th>Transaction Type</th>
+                        <th>Total Amount</th>
+                        <th>Owner Share (60%)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Dynamic rows will be inserted here -->
+                </tbody>
+            </table>
+            
+            <p>Total Earnings: <strong id="totalEarnings">$0.00</strong></p>
             <button class="btn">💸 Withdraw Funds</button>
         </section>
     </main>
@@ -99,23 +87,60 @@
     </footer>
 
     <script>
+        // Function to fetch owner earnings.
+        document.getElementById("fetchBtn").addEventListener("click", function() {
+            const startDate = document.getElementById("startDate").value;
+            const endDate = document.getElementById("endDate").value;
+            let url = '/get_owner_payments';
+            if(startDate && endDate) {
+                url += `?start_date=${startDate}&end_date=${endDate}`;
+            } else if(startDate) {
+                url += `?start_date=${startDate}`;
+            }
+            // If neither is provided, url remains '/get_owner_payments' to fetch all.
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const tbody = document.getElementById("ownerEarningsTable").querySelector("tbody");
+                        tbody.innerHTML = "";
+                        let total = 0;
+                        data.payments.forEach(item => {
+                            total += item.owner_share;
+                            let row = document.createElement("tr");
+                            row.innerHTML = `<td>${item.transaction_type}</td>
+                                             <td>$${item.total_amount.toFixed(2)}</td>
+                                             <td>$${item.owner_share.toFixed(2)}</td>`;
+                            tbody.appendChild(row);
+                        });
+                        document.getElementById("totalEarnings").innerText = "$" + total.toFixed(2);
+                    } else {
+                        alert(data.error || "Failed to fetch earnings.");
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    alert("An error occurred.");
+                });
+        });
+
+        // Function to download the displayed earnings table as a CSV.
         function downloadReport() {
-            let table = document.getElementById("earningsTable");
+            let table = document.getElementById("ownerEarningsTable");
             let rows = table.rows;
             let csvContent = "data:text/csv;charset=utf-8,";
-
             for (let i = 0; i < rows.length; i++) {
-                let row = [];
-                for (let j = 0; j < rows[i].cells.length; j++) {
-                    row.push(rows[i].cells[j].innerText);
+                let cols = rows[i].cells;
+                let rowData = [];
+                for (let j = 0; j < cols.length; j++) {
+                    rowData.push(cols[j].innerText);
                 }
-                csvContent += row.join(",") + "\n";
+                csvContent += rowData.join(",") + "\n";
             }
-
             let encodedUri = encodeURI(csvContent);
             let link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "earnings_report.csv");
+            link.setAttribute("download", "owner_earnings_report.csv");
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);

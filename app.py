@@ -203,6 +203,74 @@ def create_db_and_table():
             """
             cursor.execute(create_pricing_table)
 
+        # Create Parking Lot Owners Table
+        create_parkinglotowners_table = """
+        CREATE TABLE IF NOT EXISTS tbl_parkinglotowners (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(100) UNIQUE,
+            password VARCHAR(255),
+            name VARCHAR(100),
+            contact VARCHAR(15),
+            lot_name VARCHAR(100),
+            location VARCHAR(255),
+            capacity INT,
+            pricing DECIMAL(10,2),
+            amenities VARCHAR(255)
+        );
+        """
+        cursor.execute(create_parkinglotowners_table)
+
+        # Create Owner Registrations Table (to store details entered via register_owner.html)
+        create_owner_registrations = """
+        CREATE TABLE IF NOT EXISTS tbl_owner_registrations (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            owner_email VARCHAR(100),
+            lot_name VARCHAR(100),
+            location VARCHAR(255),
+            capacity INT,
+            contact VARCHAR(15),
+            pricing DECIMAL(10,2),
+            amenities VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+        cursor.execute(create_owner_registrations)
+
+        # Create Owner Payments Table (to store 60% share per transaction type)
+        create_owner_payments = """
+        CREATE TABLE IF NOT EXISTS tbl_owner_payments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            owner_email VARCHAR(100),
+            transaction_date DATE,
+            transaction_type VARCHAR(50),
+            total_amount DECIMAL(10,2),
+            owner_share DECIMAL(10,2),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            UNIQUE(owner_email, transaction_date, transaction_type)
+        );
+        """
+        cursor.execute(create_owner_payments)
+
+        # Insert a default parking lot owner if one doesn't already exist
+        default_owner_email = 'owner@example.com'
+        default_owner_password = 'password'  # Consider hashing the password in production
+        default_owner_name = 'Default Owner'
+        default_owner_contact = '1234567890'
+        default_lot_name = 'Default Lot'
+        default_location = '123 Default Street'
+        default_capacity = 50
+        default_pricing = 10.00
+        default_amenities = 'CCTV, Security'
+
+        insert_default_owner = """
+        INSERT IGNORE INTO tbl_parkinglotowners 
+        (email, password, name, contact, lot_name, location, capacity, pricing, amenities)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_default_owner, (default_owner_email, default_owner_password, default_owner_name, default_owner_contact, default_lot_name, default_location, default_capacity, default_pricing, default_amenities))
+        conn.commit()
+
+
         conn.commit()
         cursor.close()
         conn.close()
@@ -278,15 +346,13 @@ def login():
             return "Database connection failed!"
         try:
             cursor = conn.cursor(dictionary=True)
-            
-            # First, check if the credentials match an admin record.
+            # Check if credentials match an admin record.
             select_admin_query = "SELECT * FROM tbl_admins WHERE email = %s AND password = %s"
             cursor.execute(select_admin_query, (email, password))
             admin = cursor.fetchone()
             if admin:
                 session["admin_id"] = admin["id"]
                 session["email"] = admin["email"]
-                # Insert login history for admin
                 user_ip = request.remote_addr
                 insert_login_history = "INSERT INTO tbl_login_history (user_email, ip_address) VALUES (%s, %s)"
                 cursor.execute(insert_login_history, (email, user_ip))
@@ -295,15 +361,29 @@ def login():
                 conn.close()
                 return redirect(url_for("admin_home"))
             
-            # Otherwise, check if they match a regular user.
+            # Check if credentials match a parking lot owner record.
+            select_owner_query = "SELECT * FROM tbl_parkinglotowners WHERE email = %s AND password = %s"
+            cursor.execute(select_owner_query, (email, password))
+            owner = cursor.fetchone()
+            if owner:
+                session["owner_id"] = owner["id"]
+                session["email"] = owner["email"]
+                user_ip = request.remote_addr
+                insert_login_history = "INSERT INTO tbl_login_history (user_email, ip_address) VALUES (%s, %s)"
+                cursor.execute(insert_login_history, (email, user_ip))
+                conn.commit()
+                cursor.close()
+                conn.close()
+                return redirect(url_for("index_owner"))
+            
+            # Check for regular user credentials.
             select_query = "SELECT * FROM tbl_users WHERE email = %s AND password = %s"
             cursor.execute(select_query, (email, password))
             user = cursor.fetchone()
             if user:
                 session["user_id"] = user["id"]
                 session["email"] = user["email"]
-
-                # Ensure a wallet record exists for this user
+                # Ensure wallet record exists for the user.
                 cursor2 = conn.cursor()
                 select_wallet_query = "SELECT * FROM tbl_wallets WHERE user_email = %s"
                 cursor2.execute(select_wallet_query, (email,))
@@ -313,13 +393,10 @@ def login():
                     cursor2.execute(insert_wallet_query, (email,))
                     conn.commit()
                 cursor2.close()
-
-                # Insert login history record for the user
                 user_ip = request.remote_addr
                 insert_login_history = "INSERT INTO tbl_login_history (user_email, ip_address) VALUES (%s, %s)"
                 cursor.execute(insert_login_history, (email, user_ip))
                 conn.commit()
-
                 cursor.close()
                 conn.close()
                 return redirect(url_for("page1"))
@@ -327,9 +404,10 @@ def login():
                 cursor.close()
                 conn.close()
                 return redirect(url_for("login"))
-        except Error as e:
+        except Exception as e:
             return f"Error during login: {e}"
     return render_template("login.html")
+
 
 @app.route("/page1")
 def page1():
@@ -1025,6 +1103,140 @@ def admin_toggle_2fa():
     data = request.get_json()
     enabled = data.get("enabled")
     return jsonify({"success": True, "2fa_enabled": enabled})
+
+# ------------------------------------------
+# OWNER
+# ------------------------------------------
+
+@app.route("/index_owner")
+def index_owner():
+    if "owner_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("index_owner.html")
+
+@app.route("/payments_owner")
+def payments_owner():
+    if "owner_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("payments_owner.html")
+
+@app.route("/register_owner", methods=["GET", "POST"])
+def render_register_owner():
+    if request.method == "POST":
+        lot_name = request.form.get("lot-name")
+        location = request.form.get("location")
+        capacity = request.form.get("capacity")
+        owner_name = request.form.get("owner-name")
+        contact = request.form.get("contact")
+        email = request.form.get("email")
+        pricing = request.form.get("pricing")
+        amenities = request.form.get("amenities")
+        
+        conn = get_db_connection()
+        if conn is None:
+            return "Database connection failed!"
+        try:
+            cursor = conn.cursor()
+            # Insert into the owner registrations table
+            insert_sql = """
+            INSERT INTO tbl_owner_registrations 
+            (owner_email, lot_name, location, capacity, contact, pricing, amenities)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_sql, (email, lot_name, location, capacity, contact, pricing, amenities))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            # Optionally, redirect to the owner homepage after successful registration
+            return redirect(url_for("index_owner"))
+        except Exception as e:
+            return f"Error inserting registration data: {e}"
+    return render_template("register_owner.html")
+
+
+@app.route("/contact_owner", methods=["GET", "POST"])
+def render_contact_owner():
+    # Here, add your processing logic for owner contact messages if needed.
+    return render_template("contact_owner.html")
+
+@app.route("/statistics_owner")
+def render_statistics_owner():
+    if "owner_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("statistics_owner.html")
+
+@app.route("/get_owner_payments", methods=["GET"])
+def get_owner_payments():
+    if "owner_id" not in session:
+        return jsonify({"success": False, "error": "Owner not logged in"}), 401
+    
+    owner_email = session["email"]
+    start_date = request.args.get("start_date")
+    end_date = request.args.get("end_date")
+    
+    conn = get_db_connection()
+    if not conn:
+        return jsonify({"success": False, "error": "DB connection failed"}), 500
+    
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Build the query based on provided dates.
+        if start_date and end_date:
+            query = """
+            SELECT transaction_mode, SUM(amount) AS total_amount
+            FROM tbl_transactions
+            WHERE owner_email = %s AND DATE(start_time) BETWEEN %s AND %s
+            GROUP BY transaction_mode
+            """
+            cursor.execute(query, (owner_email, start_date, end_date))
+        elif start_date:
+            query = """
+            SELECT transaction_mode, SUM(amount) AS total_amount
+            FROM tbl_transactions
+            WHERE owner_email = %s AND DATE(start_time) = %s
+            GROUP BY transaction_mode
+            """
+            cursor.execute(query, (owner_email, start_date))
+        else:
+            query = """
+            SELECT transaction_mode, SUM(amount) AS total_amount
+            FROM tbl_transactions
+            WHERE owner_email = %s
+            GROUP BY transaction_mode
+            """
+            cursor.execute(query, (owner_email,))
+            
+        results = cursor.fetchall()
+        owner_payments = []
+        for row in results:
+            total_amount = float(row["total_amount"] or 0)
+            owner_share = total_amount * 0.6
+            transaction_type = row["transaction_mode"]
+            
+            # Only update the backend table if a single date is provided.
+            if start_date and not end_date:
+                insert_sql = """
+                INSERT INTO tbl_owner_payments (owner_email, transaction_date, transaction_type, total_amount, owner_share)
+                VALUES (%s, %s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    total_amount = VALUES(total_amount), 
+                    owner_share = VALUES(owner_share)
+                """
+                cursor.execute(insert_sql, (owner_email, start_date, transaction_type, total_amount, owner_share))
+            
+            owner_payments.append({
+                "transaction_type": transaction_type,
+                "total_amount": total_amount,
+                "owner_share": owner_share
+            })
+            
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return jsonify({"success": True, "payments": owner_payments})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 if __name__ == "__main__":
     create_db_and_table()

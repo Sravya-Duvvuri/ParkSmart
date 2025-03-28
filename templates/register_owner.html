@@ -180,10 +180,11 @@
         <h1>🚗 Parking Lot Management 🚀</h1>
         <nav>
             <ul>
-                <li><a href="index_owner.html">Home</a></li>
-                <li><a href="register_owner.html">Register</a></li>
-                <li><a href="contact_owner.html">Contact</a></li>
-                <li><a href="statistics_owner.html">Stats</a></li>
+                <li><a href="{{ url_for('index_owner') }}">Home</a></li>
+                <li><a href="{{ url_for('payments_owner') }}">Payments</a></li>
+                <li><a href="{{ url_for('render_register_owner') }}">Register</a></li>
+                <li><a href="{{ url_for('render_contact_owner') }}">Contact</a></li>
+                <li><a href="{{ url_for('render_statistics_owner') }}">Stats</a></li>
             </ul>
         </nav>
     </header>
@@ -191,7 +192,7 @@
     <main>
         <section>
             <h2>Register Your Parking Lot</h2>
-            <form action="#" method="post">
+            <form action="{{ url_for('render_register_owner') }}" method="post">
                 <div class="form-group">
                     <label for="lot-name">Parking Lot Name</label>
                     <input type="text" id="lot-name" name="lot-name" placeholder="Enter parking lot name" required>

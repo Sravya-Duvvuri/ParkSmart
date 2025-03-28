@@ -1,7 +1,17 @@
 show databases;
 use my_app_db;
 show tables;
+
+select * from tbl_parkinglotowners;
+select * from tbl_owner_payments;
+select * from tbl_owner_registrations;
+ALTER TABLE tbl_transactions
+ADD COLUMN owner_email VARCHAR(100) DEFAULT NULL;
+INSERT INTO tbl_transactions (user_email, owner_email, start_time, end_time, transaction_mode, amount, status, created_at)
+VALUES ('user1@example.com', 'owner@example.com', '2025-03-21 09:50:00', '2025-03-21 10:00:00', 'Wallet', 500.00, 'Successful', '2025-03-21 10:00:00');
+
 select * from tbl_pricing;
+select * from tbl_transactions;
 
 CREATE TABLE IF NOT EXISTS tbl_pricing (
     pricing_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -104,3 +114,65 @@ VALUES ('user1@example.com', '2024-03-22 10:00:00', '2024-03-22 12:00:00', 'Wall
 
 INSERT INTO tbl_wallet_transactions (transaction_id, payment_method, promo_code) 
 VALUES (LAST_INSERT_ID(), 'Wallet', 'OFF10');
+
+
+DELIMITER //
+
+CREATE PROCEDURE insert_random_transaction()
+BEGIN
+  DECLARE t_mode VARCHAR(50);
+  DECLARE t_amount DECIMAL(10,2);
+  DECLARE t_email VARCHAR(100);
+  DECLARE t_start DATETIME;
+  DECLARE t_end DATETIME;
+  
+  -- Set a sample user email; adjust or randomize as needed.
+  SET t_email = 'user1@example.com';
+  
+  -- Generate a random amount between 50 and 1000.
+  SET t_amount = ROUND(50 + RAND() * 950, 2);
+  
+  -- Generate a random start time on a random day within a range.
+  SET t_start = DATE_ADD('2025-01-01 00:00:00', INTERVAL FLOOR(RAND()*365) DAY);
+  
+  -- Let the transaction last between 15 and 90 minutes.
+  SET t_end = DATE_ADD(t_start, INTERVAL FLOOR(RAND()*76)+15 MINUTE);
+  
+  -- Randomly choose a transaction mode: 1 = Wallet, 2 = UPI, 3 = Credit Card, 4 = Debit Card.
+  SET t_mode = ELT(FLOOR(RAND()*4)+1, 'Wallet', 'UPI', 'Credit Card', 'Debit Card');
+  
+  -- Insert into tbl_transactions including the owner_email.
+  INSERT INTO tbl_transactions (user_email, owner_email, start_time, end_time, transaction_mode, amount, status, created_at)
+  VALUES (t_email, 'owner@example.com', t_start, t_end, t_mode, t_amount, 'Successful', t_end);
+  
+  -- Depending on the transaction mode, insert a matching record into the corresponding table.
+  IF t_mode = 'UPI' THEN
+      INSERT INTO tbl_upi_transactions (transaction_id, upi_id, promo_code)
+      VALUES (LAST_INSERT_ID(), CONCAT(LEFT(t_email, LOCATE('@',t_email)-1),'upi@bank'), '');
+  ELSEIF t_mode = 'Credit Card' THEN
+      INSERT INTO tbl_credit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
+      VALUES (LAST_INSERT_ID(), '4111111111111111', 'Test User', '12/25', 'DISC15');
+  ELSEIF t_mode = 'Debit Card' THEN
+      INSERT INTO tbl_debit_transactions (transaction_id, card_number, card_holder, expiry_date, promo_code)
+      VALUES (LAST_INSERT_ID(), '5500000000000004', 'Test User', '11/24', '');
+  END IF;
+END //
+
+DELIMITER ;
+DROP PROCEDURE IF EXISTS insert_random_transaction;
+
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+CALL insert_random_transaction();
+
