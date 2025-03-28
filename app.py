@@ -4,9 +4,15 @@ import mysql.connector
 from mysql.connector import Error
 import datetime
 import random  # Needed for the init_parking_slots endpoint
+import os
+import requests
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "CHANGE_THIS_SECRET_KEY"
+
+PLATE_RECOGNIZER_API_KEY = "4470e01b51a38c9425cbf1a8cc8d7f9768bca26b"
+PLATE_RECOGNIZER_URL = "https://api.platerecognizer.com/v1/plate-reader/"
 
 # 1) Create the database and tables if they don't exist
 def create_db_and_table():
@@ -250,6 +256,18 @@ def create_db_and_table():
         );
         """
         cursor.execute(create_owner_payments)
+        
+        create_owner_complaints = """
+        CREATE TABLE IF NOT EXISTS tbl_complaints (
+            complaint_id INT AUTO_INCREMENT PRIMARY KEY,
+            owner_email VARCHAR(100),
+            licence_plate VARCHAR(50),
+            complaint_type VARCHAR(50),
+            additional_info TEXT,
+            image_path VARCHAR(255),
+            submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
 
         # Insert a default parking lot owner if one doesn't already exist
         default_owner_email = 'owner@example.com'
@@ -335,6 +353,41 @@ def register():
         except Error as e:
             return f"Error inserting data: {e}"
     return render_template("register.html")
+
+@app.route("/register_owner", methods=["GET", "POST"])
+def register_owner():
+    if request.method == "POST":
+        lot_name = request.form.get("lot-name")
+        location = request.form.get("location")
+        capacity = request.form.get("capacity")
+        owner_name = request.form.get("owner-name")
+        owner_phone = request.form.get("owner-phone")
+        email = request.form.get("owner-email")
+        pricing = request.form.get("pricing")
+        amenities = request.form.get("amenities")
+        
+        # Optionally, you might want to add a password field for the owner.
+        # For now, we’ll use a default password.
+        default_password = "ownerpassword"  # In production, hash this!
+        
+        conn = get_db_connection()
+        if conn is None:
+            return "Database connection failed!"
+        try:
+            cursor = conn.cursor()
+            insert_query = """
+            INSERT INTO tbl_parkinglotowners (email, password, name, contact, lot_name, location, capacity, pricing, amenities)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(insert_query, (email, default_password, owner_name, owner_phone, lot_name, location, capacity, pricing, amenities))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return redirect(url_for("login"))
+        except Error as e:
+            return f"Error inserting owner data: {e}"
+    return render_template("register_owner.html")
+
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -1120,6 +1173,12 @@ def payments_owner():
         return redirect(url_for("login"))
     return render_template("payments_owner.html")
 
+@app.route("/complaint_owner")
+def complaint_owner():
+    if "owner_id" not in session:
+        return redirect(url_for("login"))
+    return render_template("complaint_owner.html")
+
 @app.route("/register_owner", methods=["GET", "POST"])
 def render_register_owner():
     if request.method == "POST":
@@ -1237,6 +1296,89 @@ def get_owner_payments():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+
+@app.route("/ocr_plate", methods=["POST"])
+def ocr_plate():
+    """
+    This route receives a file under 'plateImage' from the JS fetch call,
+    sends it to Plate Recognizer, and returns JSON with the recognized plate.
+    """
+    if 'plateImage' not in request.files:
+        return jsonify({"success": False, "error": "No file part in the request."})
+    file = request.files['plateImage']
+    if file.filename == "":
+        return jsonify({"success": False, "error": "No selected file."})
+
+    try:
+        # We won't store the file permanently here; just pass it to Plate Recognizer.
+        headers = {"Authorization": f"Token {PLATE_RECOGNIZER_API_KEY}"}
+        files = {"upload": (file.filename, file.stream, file.mimetype)}
+        response = requests.post(PLATE_RECOGNIZER_URL, files=files, headers=headers)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("results") and len(data["results"]) > 0:
+                plate = data["results"][0].get("plate", "").upper()
+                return jsonify({"success": True, "plate": plate})
+            else:
+                return jsonify({"success": True, "plate": ""})  # No plate found
+        else:
+            return jsonify({"success": False, "error": f"Plate Recognizer API error: {response.status_code}"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route("/submit_complaint", methods=["POST"])
+def submit_complaint():
+    """
+    This route processes the final complaint submission, including
+    re-uploading the file or storing the same file again if needed.
+    """
+    if "owner_id" not in session:
+        return redirect(url_for("login"))
+    
+    # Extract form fields
+    owner_email = session["email"]
+    licence_plate = request.form.get("licencePlate")
+    complaint_type = request.form.get("complaintType")
+    additional_info = ""
+    if complaint_type == "Other":
+        additional_info = request.form.get("otherComplaint", "")
+
+    # Handle the uploaded file (again) for storing in 'static/complaint_images'
+    file = request.files.get("plateImage")
+    image_path = None
+    if file and file.filename:
+        # Create the folder if not exists
+        upload_folder = os.path.join(app.root_path, "static", "complaint_images")
+        if not os.path.isdir(upload_folder):
+            os.makedirs(upload_folder)
+        
+        # Save the file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(upload_folder, filename)
+        file.save(file_path)
+        
+        # We'll store the relative path in DB
+        image_path = f"static/complaint_images/{filename}"
+
+    # Insert into the tbl_complaints table
+    conn = get_db_connection()
+    if conn is None:
+        return "Database connection failed!"
+    
+    try:
+        cursor = conn.cursor()
+        insert_query = """
+        INSERT INTO tbl_complaints (owner_email, licence_plate, complaint_type, additional_info, image_path)
+        VALUES (%s, %s, %s, %s, %s)
+        """
+        cursor.execute(insert_query, (owner_email, licence_plate, complaint_type, additional_info, image_path))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return redirect(url_for("index_owner"))
+    except Error as e:
+        return f"Error submitting complaint: {e}"
 
 if __name__ == "__main__":
     create_db_and_table()
